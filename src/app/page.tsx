@@ -107,6 +107,7 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [results, setResults] = useState<any[]>([]);
   const [forbiddenWordsInput, setForbiddenWordsInput] = useState("");
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const {
     register,
@@ -183,6 +184,7 @@ export default function Home() {
 
   const onSubmit = async (data: FormDataSchema) => {
     setIsGenerating(true);
+    setApiError(null);
     
     try {
       const response = await fetch('/api/generate-marketing', {
@@ -198,9 +200,12 @@ export default function Home() {
       if (result.success) {
         setResults(result.data.marketingCopies);
       } else {
+        setApiError(result.error || '마케팅 문구 생성에 실패했습니다.');
         console.error('Generation failed:', result.error);
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      setApiError(errorMessage);
       console.error('Error:', error);
     } finally {
       setIsGenerating(false);
@@ -626,7 +631,7 @@ export default function Home() {
                           {word}
                           <button
                             type="button"
-                            onClick={() => handleForbiddenWordsRemove(word)}
+                            onClick={() => word && handleForbiddenWordsRemove(word)}
                             className="ml-1 hover:text-destructive"
                           >
                             ×
@@ -668,47 +673,225 @@ export default function Home() {
         </form>
 
         {/* 결과 출력 영역 */}
-        {results.length > 0 && (
+        {isGenerating && (
           <Card>
             <CardHeader>
-              <CardTitle>✨ 생성된 마케팅 문구</CardTitle>
+              <CardTitle>🔄 마케팅 문구 생성 중...</CardTitle>
               <CardDescription>
-                {results.length}개의 마케팅 문구가 생성되었습니다
+                AI가 당신의 요구사항에 맞는 마케팅 문구를 생성하고 있습니다
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* 스켈레톤 UI */}
+              <div className="space-y-4">
+                {[1, 2, 3].map((index) => (
+                  <div key={index} className="p-4 border rounded-lg space-y-3 animate-pulse">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-6 bg-muted rounded"></div>
+                        <div className="w-16 h-6 bg-muted rounded"></div>
+                      </div>
+                      <div className="w-16 h-8 bg-muted rounded"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-muted rounded w-3/4"></div>
+                      <div className="h-4 bg-muted rounded w-1/2"></div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="w-16 h-6 bg-muted rounded"></div>
+                      <div className="w-20 h-6 bg-muted rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* 진행률 표시 */}
+              <div className="text-center py-4">
+                <div className="inline-flex items-center gap-2 text-muted-foreground">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                  <span>AI가 창의적인 마케팅 문구를 작성하고 있습니다...</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 에러 메시지 */}
+        {apiError && (
+          <Card className="border-destructive">
+            <CardHeader>
+              <CardTitle className="text-destructive flex items-center gap-2">
+                <span>⚠️</span>
+                마케팅 문구 생성 실패
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-destructive mb-4">{apiError}</p>
+              <div className="bg-muted p-4 rounded-lg">
+                <h4 className="font-medium mb-2">문제 해결 방법:</h4>
+                <ul className="text-sm space-y-1">
+                  <li>• 인터넷 연결을 확인해주세요</li>
+                  <li>• 입력한 내용을 다시 확인해주세요</li>
+                  <li>• 잠시 후 다시 시도해주세요</li>
+                  <li>• 문제가 지속되면 관리자에게 문의해주세요</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 결과 출력 영역 */}
+        {results.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span>✨</span>
+                생성된 마케팅 문구
+                <Badge variant="secondary" className="ml-2">
+                  {results.length}개
+                </Badge>
+              </CardTitle>
+              <CardDescription>
+                AI가 생성한 맞춤형 마케팅 문구입니다. 각 문구를 복사하여 사용하세요
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
               {results.map((result, index) => (
-                <div key={index} className="p-4 border rounded-lg space-y-3">
+                <div key={index} className="p-6 border rounded-lg space-y-4 hover:shadow-md transition-all duration-200 bg-gradient-to-r from-background to-muted/30">
+                  {/* 헤더 영역 */}
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">
+                    <div className="flex items-center gap-3">
+                      {/* 플랫폼 배지 */}
+                      <Badge variant="outline" className="text-sm px-3 py-1">
                         {PLATFORMS.find(p => p.id === result.platform)?.icon || "📱"} 
                         {PLATFORMS.find(p => p.id === result.platform)?.name || "플랫폼"}
                       </Badge>
-                      <Badge variant="secondary">
-                        {result.characterCount}자
-                      </Badge>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => navigator.clipboard.writeText(result.content)}
-                    >
-                      📋 복사
-                    </Button>
-                  </div>
-                  <p className="text-lg leading-relaxed">{result.content}</p>
-                  {result.hashtags && result.hashtags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {result.hashtags.map((tag: string, tagIndex: number) => (
-                        <Badge key={tagIndex} variant="outline" className="text-xs">
-                          {tag}
+                      
+                      {/* 메타데이터 */}
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Badge variant="secondary" className="text-xs">
+                          {result.characterCount}자
                         </Badge>
-                      ))}
+                        {result.model && (
+                          <Badge variant="outline" className="text-xs">
+                            {result.model === "gpt-3.5-turbo-instruct" ? "GPT-3.5 Turbo" : result.model}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  )}
+                    
+                    {/* 액션 버튼들 */}
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigator.clipboard.writeText(result.content)}
+                        className="hover:bg-primary hover:text-primary-foreground transition-colors"
+                      >
+                        📋 복사
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          const textToCopy = `${result.content}\n\n${result.hashtags?.join(' ') || ''}`;
+                          navigator.clipboard.writeText(textToCopy);
+                        }}
+                        className="hover:bg-primary hover:text-primary-foreground transition-colors"
+                      >
+                        📝 전체 복사
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* 마케팅 문구 내용 */}
+                  <div className="space-y-3">
+                    <div className="bg-primary/5 p-4 rounded-lg border-l-4 border-primary">
+                      <p className="text-lg leading-relaxed font-medium">{result.content}</p>
+                    </div>
+                    
+                    {/* 해시태그 */}
+                    {result.hashtags && result.hashtags.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-muted-foreground">해시태그</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {result.hashtags.map((tag: string, tagIndex: number) => (
+                            <Badge key={tagIndex} variant="outline" className="text-xs hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* 하단 정보 */}
+                  <div className="flex items-center justify-between pt-3 border-t">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      {result.generatedAt && (
+                        <span>생성: {new Date(result.generatedAt).toLocaleString('ko-KR')}</span>
+                      )}
+                      {result.requestId && (
+                        <span>ID: {result.requestId}</span>
+                      )}
+                    </div>
+                    
+                    {/* 추가 액션 */}
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          // 좋아요 기능 (향후 구현)
+                          console.log('좋아요:', result.id);
+                        }}
+                        className="text-xs hover:text-primary"
+                      >
+                        👍 좋아요
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          // 공유 기능 (향후 구현)
+                          console.log('공유:', result.id);
+                        }}
+                        className="text-xs hover:text-primary"
+                      >
+                        🔗 공유
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               ))}
+              
+              {/* 결과 요약 */}
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-primary">{results.length}</div>
+                    <div className="text-sm text-muted-foreground">생성된 문구</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {Math.round(results.reduce((sum, r) => sum + (r.characterCount || 0), 0) / results.length)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">평균 글자수</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {results.reduce((sum, r) => sum + (r.hashtags?.length || 0), 0)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">총 해시태그</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-purple-600">
+                      {new Set(results.map(r => r.platform)).size}
+                    </div>
+                    <div className="text-sm text-muted-foreground">플랫폼 수</div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
