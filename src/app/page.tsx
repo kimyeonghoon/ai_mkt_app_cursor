@@ -1,109 +1,248 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Container } from "@/components/ui/container";
+import { Section } from "@/components/ui/section";
 import Link from "next/link";
 
-interface MarketingFormData {
+interface FormData {
   valueProposition: string;
   targeting: {
     gender: string;
     ageGroups: string[];
+    region: string;
+    interests: string[];
   };
   platform: string;
-  model: string; // 모델 선택 추가
   generationOptions: {
     length: string;
     tone: string;
     ctaStyle: string;
+    emotionKeywords: string[];
+    count: number;
+    forbiddenWords: string[];
   };
 }
 
-interface GeneratedCopy {
-  id: number;
-  content: string;
-  platform: string;
-  hashtags: string[];
-  characterCount: number;
-  model: string; // 모델 정보 추가
-}
+const PLATFORMS = [
+  { id: "instagram", name: "인스타그램", icon: "📸", description: "해시태그 포함, 시각적 콘텐츠" },
+  { id: "facebook", name: "페이스북", icon: "📘", description: "긴 형태, 커뮤니티 중심" },
+  { id: "youtube", name: "유튜브", icon: "🎥", description: "썸네일용, 동영상 콘텐츠" },
+  { id: "blog", name: "블로그/웹사이트", icon: "📝", description: "상세한 정보, SEO 최적화" },
+  { id: "email", name: "이메일 마케팅", icon: "📧", description: "개인화된 메시지" },
+  { id: "kakao", name: "카카오톡/문자", icon: "💬", description: "간결하고 직접적인 메시지" }
+];
+
+const LENGTH_OPTIONS = [
+  { id: "short", name: "짧음", description: "1-2문장, 소셜미디어용" },
+  { id: "medium", name: "보통", description: "3-5문장, 일반적" },
+  { id: "long", name: "길음", description: "6-10문장, 상세설명용" }
+];
+
+const TONE_OPTIONS = [
+  { id: "casual", name: "친근하고 캐주얼한", description: "편안하고 친근한 톤" },
+  { id: "professional", name: "전문적이고 신뢰감 있는", description: "전문성과 신뢰성 강조" },
+  { id: "emotional", name: "감정적이고 호소력 있는", description: "감정적 공감과 설득력" },
+  { id: "humorous", name: "유머러스하고 재미있는", description: "재미있고 기억에 남는" },
+  { id: "urgent", name: "긴급하고 액션 지향적인", description: "즉시 행동 유도" }
+];
+
+const CTA_STYLES = [
+  { id: "direct", name: "직접적", description: "지금 구매하세요" },
+  { id: "indirect", name: "간접적", description: "알아보세요" },
+  { id: "curiosity", name: "호기심 유발", description: "궁금하지 않으세요?" },
+  { id: "benefit", name: "혜택 강조", description: "놓치지 마세요" }
+];
+
+const EMOTION_KEYWORDS = [
+  { id: "trust", name: "신뢰", color: "bg-blue-100 text-blue-800" },
+  { id: "interest", name: "흥미", color: "bg-purple-100 text-purple-800" },
+  { id: "safety", name: "안전", color: "bg-green-100 text-green-800" },
+  { id: "convenience", name: "편리", color: "bg-orange-100 text-orange-800" },
+  { id: "innovation", name: "혁신", color: "bg-indigo-100 text-indigo-800" },
+  { id: "premium", name: "프리미엄", color: "bg-yellow-100 text-yellow-800" }
+];
 
 export default function Home() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [generatedCopies, setGeneratedCopies] = useState<GeneratedCopy[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<MarketingFormData>({
-    defaultValues: {
-      valueProposition: "",
-      targeting: {
-        gender: "all",
-        ageGroups: [],
-      },
-      platform: "instagram",
-      model: "gpt-3.5-turbo-instruct", // 기본값을 저렴한 모델로 설정
-      generationOptions: {
-        length: "normal",
-        tone: "friendly",
-        ctaStyle: "direct",
-      },
+  const [formData, setFormData] = useState<FormData>({
+    valueProposition: "",
+    targeting: {
+      gender: "all",
+      ageGroups: [],
+      region: "all",
+      interests: []
     },
+    platform: "",
+    generationOptions: {
+      length: "medium",
+      tone: "casual",
+      ctaStyle: "direct",
+      emotionKeywords: [],
+      count: 3,
+      forbiddenWords: []
+    }
   });
 
-  const valueProposition = watch("valueProposition");
-  const selectedPlatform = watch("platform");
-  const selectedModel = watch("model");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [results, setResults] = useState<any[]>([]);
+  const [forbiddenWordsInput, setForbiddenWordsInput] = useState("");
 
-  const onSubmit = async (data: MarketingFormData) => {
-    setIsLoading(true);
-    setError(null);
+  const handleValuePropositionChange = (value: string) => {
+    setFormData(prev => ({ ...prev, valueProposition: value }));
+  };
 
-    try {
-      const response = await fetch("/api/generate-marketing", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+  const handleGenderChange = (value: string) => {
+    setFormData(prev => ({ ...prev, targeting: { ...prev.targeting, gender: value } }));
+  };
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "API 호출에 실패했습니다.");
+  const handleAgeGroupChange = (ageGroup: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      targeting: {
+        ...prev.targeting,
+        ageGroups: checked 
+          ? [...prev.targeting.ageGroups, ageGroup]
+          : prev.targeting.ageGroups.filter(age => age !== ageGroup)
       }
+    }));
+  };
 
-      if (result.success) {
-        setGeneratedCopies(result.data.marketingCopies);
-      } else {
-        throw new Error(result.error || "문구 생성에 실패했습니다.");
+  const handleRegionChange = (value: string) => {
+    setFormData(prev => ({ ...prev, targeting: { ...prev.targeting, region: value } }));
+  };
+
+  const handleInterestChange = (interest: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      targeting: {
+        ...prev.targeting,
+        interests: checked 
+          ? [...prev.targeting.interests, interest]
+          : prev.targeting.interests.filter(i => i !== interest)
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
-    } finally {
-      setIsLoading(false);
+    }));
+  };
+
+  const handlePlatformChange = (value: string) => {
+    setFormData(prev => ({ ...prev, platform: value }));
+  };
+
+  const handleLengthChange = (value: string) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      generationOptions: { ...prev.generationOptions, length: value } 
+    }));
+  };
+
+  const handleToneChange = (value: string) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      generationOptions: { ...prev.generationOptions, tone: value } 
+    }));
+  };
+
+  const handleCtaStyleChange = (value: string) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      generationOptions: { ...prev.generationOptions, ctaStyle: value } 
+    }));
+  };
+
+  const handleEmotionKeywordChange = (keyword: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      generationOptions: {
+        ...prev.generationOptions,
+        emotionKeywords: checked 
+          ? [...prev.generationOptions.emotionKeywords, keyword]
+          : prev.generationOptions.emotionKeywords.filter(k => k !== keyword)
+      }
+    }));
+  };
+
+  const handleCountChange = (value: string) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      generationOptions: { ...prev.generationOptions, count: parseInt(value) } 
+    }));
+  };
+
+  const handleForbiddenWordsAdd = () => {
+    if (forbiddenWordsInput.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        generationOptions: {
+          ...prev.generationOptions,
+          forbiddenWords: [...prev.generationOptions.forbiddenWords, forbiddenWordsInput.trim()]
+        }
+      }));
+      setForbiddenWordsInput("");
     }
   };
 
+  const handleForbiddenWordsRemove = (word: string) => {
+    setFormData(prev => ({
+      ...prev,
+      generationOptions: {
+        ...prev.generationOptions,
+        forbiddenWords: prev.generationOptions.forbiddenWords.filter(w => w !== word)
+      }
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsGenerating(true);
+    
+    try {
+      const response = await fetch('/api/generate-marketing', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setResults(data.data.marketingCopies);
+      } else {
+        console.error('Generation failed:', data.error);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const characterCount = formData.valueProposition.length;
+  const isFormValid = formData.valueProposition.length >= 10 && formData.platform;
+
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="mx-auto max-w-4xl space-y-8">
+    <Container size="lg" padding="lg">
+      <Section spacing="lg">
         {/* 헤더 */}
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-foreground">
-            AI 마케팅 문구 생성기
+          <h1 className="text-4xl font-bold text-primary">
+            🚀 AI 마케팅 문구 생성기
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             타겟과 플랫폼에 따른 맞춤형 마케팅 문구를 자동으로 생성하세요
           </p>
           
-          {/* 디자인 시스템 링크 */}
+          {/* 디자인 시스템과 고급 마케팅 기능 링크 */}
           <div className="flex justify-center gap-4">
             <Link href="/design-system">
               <Button variant="outline" size="sm">
@@ -118,200 +257,393 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 메인 폼 */}
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* 가치 제언 입력 섹션 */}
           <Card>
             <CardHeader>
-              <CardTitle>마케팅 문구 생성</CardTitle>
+              <CardTitle>💡 가치 제언 입력</CardTitle>
               <CardDescription>
-                제품/서비스의 가치 제언을 입력하고 타겟팅 옵션을 선택하세요
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* 가치 제언 입력 */}
-              <div className="space-y-2">
-                <label htmlFor="value-proposition" className="text-sm font-medium">
-                  가치 제언 *
-                </label>
-                <Textarea
-                  {...register("valueProposition", { 
-                    required: "가치 제언을 입력해주세요",
-                    minLength: { value: 10, message: "최소 10자 이상 입력해주세요" }
-                  })}
-                  id="value-proposition"
-                  placeholder="제품/서비스가 제공하는 핵심 가치나 혜택을 설명해주세요 (최소 10자, 최대 500자)"
-                  className="min-h-[120px] resize-none"
-                  maxLength={500}
-                />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-destructive">
-                    {errors.valueProposition?.message}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {valueProposition?.length || 0} / 500
-                  </span>
-                </div>
-              </div>
-
-              {/* AI 모델 선택 */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">AI 모델 선택</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">모델</label>
-                    <Select onValueChange={(value) => setValue("model", value)} value={selectedModel}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="AI 모델을 선택하세요" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="gpt-3.5-turbo-instruct">
-                          GPT-3.5 Turbo Instruct (저렴함 - $0.0002)
-                        </SelectItem>
-                        <SelectItem value="gpt-3.5-turbo">
-                          GPT-3.5 Turbo (표준 - $0.0004)
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      {selectedModel === "gpt-3.5-turbo-instruct" 
-                        ? "비용 효율적인 모델로 빠르고 저렴하게 생성" 
-                        : "더 정교한 문구 생성을 위한 표준 모델"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* 타겟팅 옵션 */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">타겟팅 옵션</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* 성별 */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">성별</label>
-                    <Select onValueChange={(value) => setValue("targeting.gender", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="성별을 선택하세요" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">전체</SelectItem>
-                        <SelectItem value="male">남성</SelectItem>
-                        <SelectItem value="female">여성</SelectItem>
-                        <SelectItem value="other">기타</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* 연령대 */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">연령대</label>
-                    <Select onValueChange={(value) => setValue("targeting.ageGroups", [value])}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="연령대를 선택하세요" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10s">10대</SelectItem>
-                        <SelectItem value="20s">20대</SelectItem>
-                        <SelectItem value="30s">30대</SelectItem>
-                        <SelectItem value="40s">40대</SelectItem>
-                        <SelectItem value="50s">50대</SelectItem>
-                        <SelectItem value="60s+">60대 이상</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              {/* 플랫폼 선택 */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">타겟 플랫폼</h3>
-                <Tabs value={selectedPlatform} onValueChange={(value) => setValue("platform", value)} className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="instagram">인스타그램</TabsTrigger>
-                    <TabsTrigger value="facebook">페이스북</TabsTrigger>
-                    <TabsTrigger value="youtube">유튜브</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="instagram" className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      해시태그가 포함된 짧고 임팩트 있는 문구를 생성합니다.
-                    </p>
-                  </TabsContent>
-                  <TabsContent value="facebook" className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      긴 형태의 상세한 마케팅 문구를 생성합니다.
-                    </p>
-                  </TabsContent>
-                  <TabsContent value="youtube" className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      썸네일과 설명에 적합한 문구를 생성합니다.
-                    </p>
-                  </TabsContent>
-                </Tabs>
-              </div>
-
-              {/* 생성 버튼 */}
-              <div className="flex justify-center">
-                <Button 
-                  type="submit" 
-                  size="lg" 
-                  className="px-8"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "생성 중..." : "마케팅 문구 생성하기"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </form>
-
-        {/* 에러 메시지 */}
-        {error && (
-          <Card className="border-destructive">
-            <CardContent className="pt-6">
-              <div className="text-center text-destructive">
-                <p className="font-medium">오류가 발생했습니다:</p>
-                <p className="text-sm">{error}</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 결과 출력 영역 */}
-        {generatedCopies.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>생성된 결과</CardTitle>
-              <CardDescription>
-                AI가 생성한 마케팅 문구입니다
+                제품/서비스의 핵심 가치와 혜택을 명확하게 설명해주세요
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {generatedCopies.map((copy) => (
-                <div key={copy.id} className="p-4 border rounded-lg bg-muted/50">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-muted-foreground">
-                        {copy.platform === 'instagram' ? '📷 인스타그램' : 
-                         copy.platform === 'facebook' ? '📘 페이스북' : 
-                         copy.platform === 'youtube' ? '📺 유튜브' : '🌐 일반'}
-                      </span>
-                      <span className="text-xs text-primary bg-primary/10 px-2 py-1 rounded">
-                        {copy.model === 'gpt-3.5-turbo-instruct' ? '저렴' : '표준'}
-                      </span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {copy.characterCount}자
-                    </span>
+              <div className="space-y-2">
+                <Label htmlFor="valueProposition">가치 제언 *</Label>
+                <div className="relative">
+                  <Textarea
+                    id="valueProposition"
+                    placeholder="예시: 건강한 식습관으로 더 멋진 20대 되어보세요! 나에게 꼭 맞는 영양 관리 서비스로 쉽고 편리하게 시작해보세요."
+                    value={formData.valueProposition}
+                    onChange={(e) => handleValuePropositionChange(e.target.value)}
+                    className="min-h-[120px] resize-none"
+                    maxLength={500}
+                  />
+                  <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
+                    {characterCount}/500
                   </div>
-                  <p className="text-foreground mb-3 leading-relaxed">
-                    {copy.content}
+                </div>
+                {characterCount < 10 && characterCount > 0 && (
+                  <p className="text-sm text-destructive">
+                    최소 10자 이상 입력해주세요
                   </p>
-                  {copy.hashtags.length > 0 && (
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 타겟팅 옵션 섹션 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>🎯 타겟팅 옵션</CardTitle>
+              <CardDescription>
+                마케팅 문구를 받을 타겟 고객을 정의하세요
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* 성별 */}
+              <div className="space-y-3">
+                <Label>성별</Label>
+                <RadioGroup value={formData.targeting.gender} onValueChange={handleGenderChange}>
+                  <div className="flex gap-4">
+                    {[
+                      { id: "all", name: "전체" },
+                      { id: "male", name: "남성" },
+                      { id: "female", name: "여성" },
+                      { id: "other", name: "기타" }
+                    ].map(gender => (
+                      <div key={gender.id} className="flex items-center space-x-2">
+                        <RadioGroupItem value={gender.id} id={gender.id} />
+                        <Label htmlFor={gender.id}>{gender.name}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {/* 연령대 */}
+              <div className="space-y-3">
+                <Label>연령대</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {[
+                    { id: "10s", name: "10대" },
+                    { id: "20s", name: "20대" },
+                    { id: "30s", name: "30대" },
+                    { id: "40s", name: "40대" },
+                    { id: "50s", name: "50대" },
+                    { id: "60s", name: "60대 이상" }
+                  ].map(age => (
+                    <div key={age.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={age.id}
+                        checked={formData.targeting.ageGroups.includes(age.id)}
+                        onCheckedChange={(checked) => 
+                          handleAgeGroupChange(age.id, checked as boolean)
+                        }
+                      />
+                      <Label htmlFor={age.id}>{age.name}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 지역 */}
+              <div className="space-y-3">
+                <Label>지역</Label>
+                <Select value={formData.targeting.region} onValueChange={handleRegionChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="지역을 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전국</SelectItem>
+                    <SelectItem value="seoul">수도권</SelectItem>
+                    <SelectItem value="local">지방</SelectItem>
+                    <SelectItem value="overseas">해외</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 관심분야 */}
+              <div className="space-y-3">
+                <Label>관심분야</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {[
+                    { id: "beauty", name: "뷰티" },
+                    { id: "fashion", name: "패션" },
+                    { id: "it", name: "IT" },
+                    { id: "health", name: "건강" },
+                    { id: "education", name: "교육" },
+                    { id: "travel", name: "여행" },
+                    { id: "food", name: "음식" },
+                    { id: "sports", name: "스포츠" },
+                    { id: "culture", name: "문화" },
+                    { id: "other", name: "기타" }
+                  ].map(interest => (
+                    <div key={interest.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={interest.id}
+                        checked={formData.targeting.interests.includes(interest.id)}
+                        onCheckedChange={(checked) => 
+                          handleInterestChange(interest.id, checked as boolean)
+                        }
+                      />
+                      <Label htmlFor={interest.id}>{interest.name}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 플랫폼 선택 섹션 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>📱 플랫폼 선택</CardTitle>
+              <CardDescription>
+                마케팅 문구를 사용할 플랫폼을 선택하세요
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RadioGroup value={formData.platform} onValueChange={handlePlatformChange}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {PLATFORMS.map(platform => (
+                    <div key={platform.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-colors">
+                      <RadioGroupItem value={platform.id} id={platform.id} />
+                      <div className="flex-1">
+                        <Label htmlFor={platform.id} className="text-lg font-medium cursor-pointer">
+                          {platform.icon} {platform.name}
+                        </Label>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {platform.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </RadioGroup>
+            </CardContent>
+          </Card>
+
+          {/* 생성 옵션 섹션 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>⚙️ 생성 옵션</CardTitle>
+              <CardDescription>
+                마케팅 문구의 스타일과 특성을 설정하세요
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* 문구 분량 */}
+              <div className="space-y-3">
+                <Label>문구 분량</Label>
+                <RadioGroup value={formData.generationOptions.length} onValueChange={handleLengthChange}>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {LENGTH_OPTIONS.map(option => (
+                      <div key={option.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-colors">
+                        <RadioGroupItem value={option.id} id={option.id} />
+                        <div className="flex-1">
+                          <Label htmlFor={option.id} className="font-medium cursor-pointer">
+                            {option.name}
+                          </Label>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {option.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {/* 어조/톤 */}
+              <div className="space-y-3">
+                <Label>어조/톤</Label>
+                <Select value={formData.generationOptions.tone} onValueChange={handleToneChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="어조를 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TONE_OPTIONS.map(tone => (
+                      <SelectItem key={tone.id} value={tone.id}>
+                        {tone.name} - {tone.description}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 콜투액션 스타일 */}
+              <div className="space-y-3">
+                <Label>콜투액션 스타일</Label>
+                <RadioGroup value={formData.generationOptions.ctaStyle} onValueChange={handleCtaStyleChange}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {CTA_STYLES.map(style => (
+                      <div key={style.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-colors">
+                        <RadioGroupItem value={style.id} id={style.id} />
+                        <div className="flex-1">
+                          <Label htmlFor={style.id} className="font-medium cursor-pointer">
+                            {style.name}
+                          </Label>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {style.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </RadioGroup>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 고급 옵션 섹션 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>🔧 고급 옵션</CardTitle>
+              <CardDescription>
+                더 세밀한 마케팅 문구 생성을 위한 추가 설정
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* 감정 키워드 */}
+              <div className="space-y-3">
+                <Label>감정 키워드</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {EMOTION_KEYWORDS.map(keyword => (
+                    <div key={keyword.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={keyword.id}
+                        checked={formData.generationOptions.emotionKeywords.includes(keyword.id)}
+                        onCheckedChange={(checked) => 
+                          handleEmotionKeywordChange(keyword.id, checked as boolean)
+                        }
+                      />
+                      <Label htmlFor={keyword.id} className="cursor-pointer">
+                        <Badge variant="outline" className={keyword.color}>
+                          {keyword.name}
+                        </Badge>
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 생성 개수 */}
+              <div className="space-y-3">
+                <Label>생성 개수</Label>
+                <Select 
+                  value={formData.generationOptions.count.toString()} 
+                  onValueChange={handleCountChange}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5].map(count => (
+                      <SelectItem key={count} value={count.toString()}>
+                        {count}개
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 금지 단어 */}
+              <div className="space-y-3">
+                <Label>금지 단어</Label>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="금지할 단어를 입력하세요"
+                      value={forbiddenWordsInput}
+                      onChange={(e) => setForbiddenWordsInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleForbiddenWordsAdd())}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleForbiddenWordsAdd}
+                    >
+                      추가
+                    </Button>
+                  </div>
+                  {formData.generationOptions.forbiddenWords.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {formData.generationOptions.forbiddenWords.map((word, index) => (
+                        <Badge key={index} variant="secondary" className="gap-1">
+                          {word}
+                          <button
+                            type="button"
+                            onClick={() => handleForbiddenWordsRemove(word)}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 생성 버튼 */}
+          <div className="text-center">
+            <Button 
+              type="submit" 
+              size="lg" 
+              disabled={!isFormValid || isGenerating}
+              className="px-8 py-3"
+            >
+              {isGenerating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  생성 중...
+                </>
+              ) : (
+                "🚀 마케팅 문구 생성하기"
+              )}
+            </Button>
+          </div>
+        </form>
+
+        {/* 결과 출력 영역 */}
+        {results.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>✨ 생성된 마케팅 문구</CardTitle>
+              <CardDescription>
+                {results.length}개의 마케팅 문구가 생성되었습니다
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {results.map((result, index) => (
+                <div key={index} className="p-4 border rounded-lg space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">
+                        {PLATFORMS.find(p => p.id === result.platform)?.icon} 
+                        {PLATFORMS.find(p => p.id === result.platform)?.name}
+                      </Badge>
+                      <Badge variant="secondary">
+                        {result.characterCount}자
+                      </Badge>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigator.clipboard.writeText(result.content)}
+                    >
+                      📋 복사
+                    </Button>
+                  </div>
+                  <p className="text-lg leading-relaxed">{result.content}</p>
+                  {result.hashtags && result.hashtags.length > 0 && (
                     <div className="flex flex-wrap gap-1">
-                      {copy.hashtags.map((tag, index) => (
-                        <span key={index} className="text-sm text-primary">
+                      {result.hashtags.map((tag: string, tagIndex: number) => (
+                        <Badge key={tagIndex} variant="outline" className="text-xs">
                           {tag}
-                        </span>
+                        </Badge>
                       ))}
                     </div>
                   )}
@@ -320,47 +652,7 @@ export default function Home() {
             </CardContent>
           </Card>
         )}
-
-        {/* 컴포넌트 테스트 영역 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>UI 컴포넌트 테스트</CardTitle>
-            <CardDescription>
-              설치된 UI 컴포넌트들이 정상적으로 작동하는지 확인
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <Button variant="default">Default</Button>
-              <Button variant="secondary">Secondary</Button>
-              <Button variant="outline">Outline</Button>
-              <Button variant="destructive">Destructive</Button>
-              <Button variant="ghost">Ghost</Button>
-              <Button variant="link">Link</Button>
-            </div>
-            
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm">Small</Button>
-              <Button size="default">Default</Button>
-              <Button size="lg">Large</Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input placeholder="입력 테스트" />
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="선택 테스트" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="option1">옵션 1</SelectItem>
-                  <SelectItem value="option2">옵션 2</SelectItem>
-                  <SelectItem value="option3">옵션 3</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+      </Section>
+    </Container>
   );
 }
