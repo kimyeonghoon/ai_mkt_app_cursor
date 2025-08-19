@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
+import { PerformanceOptimizer } from "@/components/ui/performance-optimizer";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import Link from "next/link";
 
 interface FormData {
@@ -33,6 +38,33 @@ interface FormData {
     forbiddenWords: string[];
   };
 }
+
+// Yup에서 추론된 타입
+type FormDataSchema = yup.InferType<typeof formSchema>;
+
+// Yup 검증 스키마 정의
+const formSchema = yup.object({
+  valueProposition: yup
+    .string()
+    .required("가치 제언을 입력해주세요")
+    .min(10, "최소 10자 이상 입력해주세요")
+    .max(500, "최대 500자까지 입력 가능합니다"),
+  targeting: yup.object({
+    gender: yup.string().required("성별을 선택해주세요"),
+    ageGroups: yup.array().min(1, "최소 1개 이상의 연령대를 선택해주세요"),
+    region: yup.string().required("지역을 선택해주세요"),
+    interests: yup.array().min(1, "최소 1개 이상의 관심분야를 선택해주세요")
+  }),
+  platform: yup.string().required("플랫폼을 선택해주세요"),
+  generationOptions: yup.object({
+    length: yup.string().required("문구 분량을 선택해주세요"),
+    tone: yup.string().required("어조/톤을 선택해주세요"),
+    ctaStyle: yup.string().required("콜투액션 스타일을 선택해주세요"),
+    emotionKeywords: yup.array().of(yup.string()),
+    count: yup.number().min(1).max(5).required("생성 개수를 선택해주세요"),
+    forbiddenWords: yup.array().of(yup.string())
+  })
+});
 
 const PLATFORMS = [
   { id: "instagram", name: "인스타그램", icon: "📸", description: "해시태그 포함, 시각적 콘텐츠" },
@@ -74,135 +106,90 @@ const EMOTION_KEYWORDS = [
 ];
 
 export default function Home() {
-  const [formData, setFormData] = useState<FormData>({
-    valueProposition: "",
-    targeting: {
-      gender: "all",
-      ageGroups: [],
-      region: "all",
-      interests: []
-    },
-    platform: "",
-    generationOptions: {
-      length: "medium",
-      tone: "casual",
-      ctaStyle: "direct",
-      emotionKeywords: [],
-      count: 3,
-      forbiddenWords: []
-    }
-  });
-
   const [isGenerating, setIsGenerating] = useState(false);
   const [results, setResults] = useState<any[]>([]);
   const [forbiddenWordsInput, setForbiddenWordsInput] = useState("");
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  const handleValuePropositionChange = (value: string) => {
-    setFormData(prev => ({ ...prev, valueProposition: value }));
-  };
+  // 에러 상태 관리
+  const [hasError, setHasError] = useState(false);
 
-  const handleGenderChange = (value: string) => {
-    setFormData(prev => ({ ...prev, targeting: { ...prev.targeting, gender: value } }));
-  };
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors, isValid, isDirty }
+  } = useForm<FormDataSchema>({
+    resolver: yupResolver(formSchema),
+    defaultValues: {
+      valueProposition: "",
+      targeting: {
+        gender: "all",
+        ageGroups: [],
+        region: "all",
+        interests: []
+      },
+      platform: "",
+      generationOptions: {
+        length: "medium",
+        tone: "casual",
+        ctaStyle: "direct",
+        emotionKeywords: [],
+        count: 3,
+        forbiddenWords: []
+      }
+    },
+    mode: "onChange" // 실시간 검증
+  });
+
+  const watchedValues = watch();
 
   const handleAgeGroupChange = (ageGroup: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      targeting: {
-        ...prev.targeting,
-        ageGroups: checked 
-          ? [...prev.targeting.ageGroups, ageGroup]
-          : prev.targeting.ageGroups.filter(age => age !== ageGroup)
-      }
-    }));
-  };
-
-  const handleRegionChange = (value: string) => {
-    setFormData(prev => ({ ...prev, targeting: { ...prev.targeting, region: value } }));
+    const currentAgeGroups = watchedValues.targeting.ageGroups || [];
+    const newAgeGroups = checked 
+      ? [...currentAgeGroups, ageGroup]
+      : currentAgeGroups.filter(age => age !== ageGroup);
+    
+    setValue("targeting.ageGroups", newAgeGroups, { shouldValidate: true });
   };
 
   const handleInterestChange = (interest: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      targeting: {
-        ...prev.targeting,
-        interests: checked 
-          ? [...prev.targeting.interests, interest]
-          : prev.targeting.interests.filter(i => i !== interest)
-      }
-    }));
-  };
-
-  const handlePlatformChange = (value: string) => {
-    setFormData(prev => ({ ...prev, platform: value }));
-  };
-
-  const handleLengthChange = (value: string) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      generationOptions: { ...prev.generationOptions, length: value } 
-    }));
-  };
-
-  const handleToneChange = (value: string) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      generationOptions: { ...prev.generationOptions, tone: value } 
-    }));
-  };
-
-  const handleCtaStyleChange = (value: string) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      generationOptions: { ...prev.generationOptions, ctaStyle: value } 
-    }));
+    const currentInterests = watchedValues.targeting.interests || [];
+    const newInterests = checked 
+      ? [...currentInterests, interest]
+      : currentInterests.filter(i => i !== interest);
+    
+    setValue("targeting.interests", newInterests, { shouldValidate: true });
   };
 
   const handleEmotionKeywordChange = (keyword: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      generationOptions: {
-        ...prev.generationOptions,
-        emotionKeywords: checked 
-          ? [...prev.generationOptions.emotionKeywords, keyword]
-          : prev.generationOptions.emotionKeywords.filter(k => k !== keyword)
-      }
-    }));
-  };
-
-  const handleCountChange = (value: string) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      generationOptions: { ...prev.generationOptions, count: parseInt(value) } 
-    }));
+    const currentKeywords = watchedValues.generationOptions.emotionKeywords || [];
+    const newKeywords = checked 
+      ? [...currentKeywords, keyword]
+      : currentKeywords.filter(k => k !== keyword);
+    
+    setValue("generationOptions.emotionKeywords", newKeywords);
   };
 
   const handleForbiddenWordsAdd = () => {
     if (forbiddenWordsInput.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        generationOptions: {
-          ...prev.generationOptions,
-          forbiddenWords: [...prev.generationOptions.forbiddenWords, forbiddenWordsInput.trim()]
-        }
-      }));
+      const currentWords = watchedValues.generationOptions.forbiddenWords || [];
+      const newWords = [...currentWords, forbiddenWordsInput.trim()];
+      setValue("generationOptions.forbiddenWords", newWords);
       setForbiddenWordsInput("");
     }
   };
 
   const handleForbiddenWordsRemove = (word: string) => {
-    setFormData(prev => ({
-      ...prev,
-      generationOptions: {
-        ...prev.generationOptions,
-        forbiddenWords: prev.generationOptions.forbiddenWords.filter(w => w !== word)
-      }
-    }));
+    const currentWords = watchedValues.generationOptions.forbiddenWords || [];
+    const newWords = currentWords.filter(w => w !== word);
+    setValue("generationOptions.forbiddenWords", newWords);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: FormDataSchema) => {
     setIsGenerating(true);
+    setApiError(null);
     
     try {
       const response = await fetch('/api/generate-marketing', {
@@ -210,31 +197,58 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(data),
       });
 
-      const data = await response.json();
+      const result = await response.json();
       
-      if (data.success) {
-        setResults(data.data.marketingCopies);
+      if (result.success) {
+        setResults(result.data.marketingCopies);
       } else {
-        console.error('Generation failed:', data.error);
+        setApiError(result.error || '마케팅 문구 생성에 실패했습니다.');
+        console.error('Generation failed:', result.error);
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      setApiError(errorMessage);
       console.error('Error:', error);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const characterCount = formData.valueProposition.length;
-  const isFormValid = formData.valueProposition.length >= 10 && formData.platform;
+  const characterCount = watchedValues.valueProposition?.length || 0;
+
+  // 에러가 발생한 경우 에러 UI 표시
+  if (hasError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="text-destructive flex items-center gap-2">
+              <span>⚠️</span>
+              오류가 발생했습니다
+            </CardTitle>
+            <CardDescription>
+              예상치 못한 오류가 발생했습니다. 페이지를 새로고침해주세요.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => window.location.reload()} className="w-full">
+              🔄 페이지 새로고침
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <Container size="lg" padding="lg">
-      <Section spacing="lg">
-        {/* 헤더 */}
-        <div className="text-center space-y-4">
+    <ErrorBoundary>
+      <Container size="lg" padding="lg">
+        <Section spacing="lg">
+          {/* 헤더 */}
+          <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold text-primary">
             🚀 AI 마케팅 문구 생성기
           </h1>
@@ -257,100 +271,146 @@ export default function Home() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           {/* 가치 제언 입력 섹션 */}
-          <Card>
+          <Card className="focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
             <CardHeader>
-              <CardTitle>💡 가치 제언 입력</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <span role="img" aria-label="가치 제언">💡</span>
+                가치 제언 입력
+              </CardTitle>
               <CardDescription>
                 제품/서비스의 핵심 가치와 혜택을 명확하게 설명해주세요
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="valueProposition">가치 제언 *</Label>
+                <Label htmlFor="valueProposition" className="text-base font-semibold">
+                  가치 제언 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </Label>
                 <div className="relative">
                   <Textarea
                     id="valueProposition"
                     placeholder="예시: 건강한 식습관으로 더 멋진 20대 되어보세요! 나에게 꼭 맞는 영양 관리 서비스로 쉽고 편리하게 시작해보세요."
-                    value={formData.valueProposition}
-                    onChange={(e) => handleValuePropositionChange(e.target.value)}
-                    className="min-h-[120px] resize-none"
+                    {...register("valueProposition")}
+                    className={`min-h-[120px] resize-none transition-all duration-200 ${
+                      errors.valueProposition ? "border-destructive focus:border-destructive ring-destructive/20" : "focus:ring-2 focus:ring-primary/20"
+                    }`}
                     maxLength={500}
+                    aria-describedby={errors.valueProposition ? "valueProposition-error" : "valueProposition-help"}
+                    aria-invalid={!!errors.valueProposition}
                   />
-                  <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
+                  <div className="absolute bottom-2 right-2 text-xs text-muted-foreground bg-background px-2 py-1 rounded">
                     {characterCount}/500
                   </div>
                 </div>
-                {characterCount < 10 && characterCount > 0 && (
-                  <p className="text-sm text-destructive">
-                    최소 10자 이상 입력해주세요
+                {errors.valueProposition && (
+                  <p id="valueProposition-error" className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
+                    {errors.valueProposition.message}
                   </p>
                 )}
+                <p id="valueProposition-help" className="text-xs text-muted-foreground">
+                  최소 10자 이상, 최대 500자까지 입력 가능합니다
+                </p>
               </div>
             </CardContent>
           </Card>
 
           {/* 타겟팅 옵션 섹션 */}
-          <Card>
+          <Card className="focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
             <CardHeader>
-              <CardTitle>🎯 타겟팅 옵션</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <span role="img" aria-label="타겟팅">🎯</span>
+                타겟팅 옵션
+              </CardTitle>
               <CardDescription>
                 마케팅 문구를 받을 타겟 고객을 정의하세요
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* 성별 */}
-              <div className="space-y-3">
-                <Label>성별</Label>
-                <RadioGroup value={formData.targeting.gender} onValueChange={handleGenderChange}>
-                  <div className="flex gap-4">
-                    {[
-                      { id: "all", name: "전체" },
-                      { id: "male", name: "남성" },
-                      { id: "female", name: "여성" },
-                      { id: "other", name: "기타" }
-                    ].map(gender => (
-                      <div key={gender.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={gender.id} id={gender.id} />
-                        <Label htmlFor={gender.id}>{gender.name}</Label>
-                      </div>
-                    ))}
-                  </div>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  성별 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
+                <RadioGroup 
+                  value={watchedValues.targeting?.gender || "all"} 
+                  onValueChange={(value) => setValue("targeting.gender", value, { shouldValidate: true })}
+                  className="grid grid-cols-2 md:grid-cols-4 gap-4"
+                >
+                  {[
+                    { id: "all", name: "전체", description: "모든 성별" },
+                    { id: "male", name: "남성", description: "남성 타겟" },
+                    { id: "female", name: "여성", description: "여성 타겟" },
+                    { id: "other", name: "기타", description: "기타 성별" }
+                  ].map(gender => (
+                    <div key={gender.id} className="flex items-center space-x-2 p-3 border rounded-lg hover:border-primary transition-colors">
+                      <RadioGroupItem value={gender.id} id={gender.id} />
+                      <Label htmlFor={gender.id} className="cursor-pointer flex-1">
+                        <div className="font-medium">{gender.name}</div>
+                        <div className="text-xs text-muted-foreground">{gender.description}</div>
+                      </Label>
+                    </div>
+                  ))}
                 </RadioGroup>
-              </div>
+                {errors.targeting?.gender && (
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
+                    {errors.targeting.gender.message}
+                  </p>
+                )}
+              </fieldset>
 
               {/* 연령대 */}
-              <div className="space-y-3">
-                <Label>연령대</Label>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  연령대 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {[
-                    { id: "10s", name: "10대" },
-                    { id: "20s", name: "20대" },
-                    { id: "30s", name: "30대" },
-                    { id: "40s", name: "40대" },
-                    { id: "50s", name: "50대" },
-                    { id: "60s", name: "60대 이상" }
+                    { id: "10s", name: "10대", description: "10-19세" },
+                    { id: "20s", name: "20대", description: "20-29세" },
+                    { id: "30s", name: "30대", description: "30-39세" },
+                    { id: "40s", name: "40대", description: "40-49세" },
+                    { id: "50s", name: "50대", description: "50-59세" },
+                    { id: "60s", name: "60대 이상", description: "60세 이상" }
                   ].map(age => (
-                    <div key={age.id} className="flex items-center space-x-2">
+                    <div key={age.id} className="flex items-center space-x-2 p-3 border rounded-lg hover:border-primary transition-colors">
                       <Checkbox
                         id={age.id}
-                        checked={formData.targeting.ageGroups.includes(age.id)}
+                        checked={watchedValues.targeting?.ageGroups?.includes(age.id) || false}
                         onCheckedChange={(checked) => 
                           handleAgeGroupChange(age.id, checked as boolean)
                         }
                       />
-                      <Label htmlFor={age.id}>{age.name}</Label>
+                      <Label htmlFor={age.id} className="cursor-pointer flex-1">
+                        <div className="font-medium">{age.name}</div>
+                        <div className="text-xs text-muted-foreground">{age.description}</div>
+                      </Label>
                     </div>
                   ))}
                 </div>
-              </div>
+                {errors.targeting?.ageGroups && (
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
+                    {errors.targeting.ageGroups.message}
+                  </p>
+                )}
+              </fieldset>
 
               {/* 지역 */}
-              <div className="space-y-3">
-                <Label>지역</Label>
-                <Select value={formData.targeting.region} onValueChange={handleRegionChange}>
-                  <SelectTrigger>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  지역 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
+                <Select 
+                  value={watchedValues.targeting?.region || "all"} 
+                  onValueChange={(value) => setValue("targeting.region", value, { shouldValidate: true })}
+                >
+                  <SelectTrigger className={`transition-all duration-200 ${
+                    errors.targeting?.region ? "border-destructive focus:border-destructive ring-destructive/20" : "focus:ring-2 focus:ring-primary/20"
+                  }`}>
                     <SelectValue placeholder="지역을 선택하세요" />
                   </SelectTrigger>
                   <SelectContent>
@@ -360,105 +420,148 @@ export default function Home() {
                     <SelectItem value="overseas">해외</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+                {errors.targeting?.region && (
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
+                    {errors.targeting.region.message}
+                  </p>
+                )}
+              </fieldset>
 
               {/* 관심분야 */}
-              <div className="space-y-3">
-                <Label>관심분야</Label>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  관심분야 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {[
-                    { id: "beauty", name: "뷰티" },
-                    { id: "fashion", name: "패션" },
-                    { id: "it", name: "IT" },
-                    { id: "health", name: "건강" },
-                    { id: "education", name: "교육" },
-                    { id: "travel", name: "여행" },
-                    { id: "food", name: "음식" },
-                    { id: "sports", name: "스포츠" },
-                    { id: "culture", name: "문화" },
-                    { id: "other", name: "기타" }
+                    { id: "beauty", name: "뷰티", description: "화장품, 스킨케어" },
+                    { id: "fashion", name: "패션", description: "의류, 액세서리" },
+                    { id: "it", name: "IT", description: "기술, 소프트웨어" },
+                    { id: "health", name: "건강", description: "운동, 영양" },
+                    { id: "education", name: "교육", description: "학습, 강의" },
+                    { id: "travel", name: "여행", description: "관광, 휴가" },
+                    { id: "food", name: "음식", description: "요리, 맛집" },
+                    { id: "sports", name: "스포츠", description: "운동, 경기" },
+                    { id: "culture", name: "문화", description: "예술, 엔터테인먼트" },
+                    { id: "other", name: "기타", description: "기타 분야" }
                   ].map(interest => (
-                    <div key={interest.id} className="flex items-center space-x-2">
+                    <div key={interest.id} className="flex items-center space-x-2 p-3 border rounded-lg hover:border-primary transition-colors">
                       <Checkbox
                         id={interest.id}
-                        checked={formData.targeting.interests.includes(interest.id)}
+                        checked={watchedValues.targeting?.interests?.includes(interest.id) || false}
                         onCheckedChange={(checked) => 
                           handleInterestChange(interest.id, checked as boolean)
                         }
                       />
-                      <Label htmlFor={interest.id}>{interest.name}</Label>
+                      <Label htmlFor={interest.id} className="cursor-pointer flex-1">
+                        <div className="font-medium">{interest.name}</div>
+                        <div className="text-xs text-muted-foreground">{interest.description}</div>
+                      </Label>
                     </div>
                   ))}
                 </div>
-              </div>
+                {errors.targeting?.interests && (
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
+                    {errors.targeting.interests.message}
+                  </p>
+                )}
+              </fieldset>
             </CardContent>
           </Card>
 
           {/* 플랫폼 선택 섹션 */}
-          <Card>
+          <Card className="focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
             <CardHeader>
-              <CardTitle>📱 플랫폼 선택</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <span role="img" aria-label="플랫폼">📱</span>
+                플랫폼 선택
+              </CardTitle>
               <CardDescription>
                 마케팅 문구를 사용할 플랫폼을 선택하세요
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <RadioGroup value={formData.platform} onValueChange={handlePlatformChange}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {PLATFORMS.map(platform => (
-                    <div key={platform.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-colors">
-                      <RadioGroupItem value={platform.id} id={platform.id} />
-                      <div className="flex-1">
-                        <Label htmlFor={platform.id} className="text-lg font-medium cursor-pointer">
-                          {platform.icon} {platform.name}
-                        </Label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {platform.description}
-                        </p>
+              <RadioGroup 
+                value={watchedValues.platform || ""} 
+                onValueChange={(value) => setValue("platform", value, { shouldValidate: true })}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+              >
+                {PLATFORMS.map(platform => (
+                  <div key={platform.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-all duration-200 hover:shadow-md">
+                    <RadioGroupItem value={platform.id} id={platform.id} />
+                    <Label htmlFor={platform.id} className="text-lg font-medium cursor-pointer flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span role="img" aria-label={platform.name}>{platform.icon}</span>
+                        {platform.name}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                      <p className="text-sm text-muted-foreground font-normal">{platform.description}</p>
+                    </Label>
+                  </div>
+                ))}
               </RadioGroup>
+              {errors.platform && (
+                <p className="text-sm text-destructive flex items-center gap-1 mt-3" role="alert">
+                  <span className="text-red-500" aria-hidden="true">⚠️</span>
+                  {errors.platform.message}
+                </p>
+              )}
             </CardContent>
           </Card>
 
           {/* 생성 옵션 섹션 */}
-          <Card>
+          <Card className="focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
             <CardHeader>
-              <CardTitle>⚙️ 생성 옵션</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <span role="img" aria-label="생성 옵션">⚙️</span>
+                생성 옵션
+              </CardTitle>
               <CardDescription>
                 마케팅 문구의 스타일과 특성을 설정하세요
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* 문구 분량 */}
-              <div className="space-y-3">
-                <Label>문구 분량</Label>
-                <RadioGroup value={formData.generationOptions.length} onValueChange={handleLengthChange}>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {LENGTH_OPTIONS.map(option => (
-                      <div key={option.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-colors">
-                        <RadioGroupItem value={option.id} id={option.id} />
-                        <div className="flex-1">
-                          <Label htmlFor={option.id} className="font-medium cursor-pointer">
-                            {option.name}
-                          </Label>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {option.description}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  문구 분량 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
+                <RadioGroup 
+                  value={watchedValues.generationOptions?.length || "medium"} 
+                  onValueChange={(value) => setValue("generationOptions.length", value, { shouldValidate: true })}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                >
+                  {LENGTH_OPTIONS.map(option => (
+                    <div key={option.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-all duration-200 hover:shadow-md">
+                      <RadioGroupItem value={option.id} id={option.id} />
+                      <Label htmlFor={option.id} className="font-medium cursor-pointer flex-1">
+                        <div className="font-semibold mb-1">{option.name}</div>
+                        <p className="text-sm text-muted-foreground font-normal">{option.description}</p>
+                      </Label>
+                    </div>
+                  ))}
                 </RadioGroup>
-              </div>
+                {errors.generationOptions?.length && (
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
+                    {errors.generationOptions.length.message}
+                  </p>
+                )}
+              </fieldset>
 
               {/* 어조/톤 */}
-              <div className="space-y-3">
-                <Label>어조/톤</Label>
-                <Select value={formData.generationOptions.tone} onValueChange={handleToneChange}>
-                  <SelectTrigger>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  어조/톤 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
+                <Select 
+                  value={watchedValues.generationOptions?.tone || "casual"} 
+                  onValueChange={(value) => setValue("generationOptions.tone", value, { shouldValidate: true })}
+                >
+                  <SelectTrigger className={`transition-all duration-200 ${
+                    errors.generationOptions?.tone ? "border-destructive focus:border-destructive ring-destructive/20" : "focus:ring-2 focus:ring-primary/20"
+                  }`}>
                     <SelectValue placeholder="어조를 선택하세요" />
                   </SelectTrigger>
                   <SelectContent>
@@ -469,72 +572,89 @@ export default function Home() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+                {errors.generationOptions?.tone && (
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
+                    {errors.generationOptions.tone.message}
+                  </p>
+                )}
+              </fieldset>
 
               {/* 콜투액션 스타일 */}
-              <div className="space-y-3">
-                <Label>콜투액션 스타일</Label>
-                <RadioGroup value={formData.generationOptions.ctaStyle} onValueChange={handleCtaStyleChange}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {CTA_STYLES.map(style => (
-                      <div key={style.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-colors">
-                        <RadioGroupItem value={style.id} id={style.id} />
-                        <div className="flex-1">
-                          <Label htmlFor={style.id} className="font-medium cursor-pointer">
-                            {style.name}
-                          </Label>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {style.description}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  콜투액션 스타일 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
+                <RadioGroup 
+                  value={watchedValues.generationOptions?.ctaStyle || "direct"} 
+                  onValueChange={(value) => setValue("generationOptions.ctaStyle", value, { shouldValidate: true })}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                >
+                  {CTA_STYLES.map(style => (
+                    <div key={style.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-all duration-200 hover:shadow-md">
+                      <RadioGroupItem value={style.id} id={style.id} />
+                      <Label htmlFor={style.id} className="font-medium cursor-pointer flex-1">
+                        <div className="font-semibold mb-1">{style.name}</div>
+                        <p className="text-sm text-muted-foreground font-normal">{style.description}</p>
+                      </Label>
+                    </div>
+                  ))}
                 </RadioGroup>
-              </div>
+                {errors.generationOptions?.ctaStyle && (
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
+                    {errors.generationOptions.ctaStyle.message}
+                  </p>
+                )}
+              </fieldset>
             </CardContent>
           </Card>
 
           {/* 고급 옵션 섹션 */}
-          <Card>
+          <Card className="focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
             <CardHeader>
-              <CardTitle>🔧 고급 옵션</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <span role="img" aria-label="고급 옵션">🔧</span>
+                고급 옵션
+              </CardTitle>
               <CardDescription>
                 더 세밀한 마케팅 문구 생성을 위한 추가 설정
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* 감정 키워드 */}
-              <div className="space-y-3">
-                <Label>감정 키워드</Label>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">감정 키워드</legend>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {EMOTION_KEYWORDS.map(keyword => (
-                    <div key={keyword.id} className="flex items-center space-x-2">
+                    <div key={keyword.id} className="flex items-center space-x-2 p-3 border rounded-lg hover:border-primary transition-colors">
                       <Checkbox
                         id={keyword.id}
-                        checked={formData.generationOptions.emotionKeywords.includes(keyword.id)}
+                        checked={watchedValues.generationOptions?.emotionKeywords?.includes(keyword.id) || false}
                         onCheckedChange={(checked) => 
                           handleEmotionKeywordChange(keyword.id, checked as boolean)
                         }
                       />
-                      <Label htmlFor={keyword.id} className="cursor-pointer">
-                        <Badge variant="outline" className={keyword.color}>
+                      <Label htmlFor={keyword.id} className="cursor-pointer flex-1">
+                        <Badge variant="outline" className={`${keyword.color} hover:scale-105 transition-transform`}>
                           {keyword.name}
                         </Badge>
                       </Label>
                     </div>
                   ))}
                 </div>
-              </div>
+              </fieldset>
 
               {/* 생성 개수 */}
-              <div className="space-y-3">
-                <Label>생성 개수</Label>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  생성 개수 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
                 <Select 
-                  value={formData.generationOptions.count.toString()} 
-                  onValueChange={handleCountChange}
+                  value={watchedValues.generationOptions?.count?.toString() || "3"} 
+                  onValueChange={(value) => setValue("generationOptions.count", parseInt(value), { shouldValidate: true })}
                 >
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-32 transition-all duration-200 focus:ring-2 focus:ring-primary/20">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -545,11 +665,17 @@ export default function Home() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+                {errors.generationOptions?.count && (
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
+                    {errors.generationOptions.count.message}
+                  </p>
+                )}
+              </fieldset>
 
               {/* 금지 단어 */}
-              <div className="space-y-3">
-                <Label>금지 단어</Label>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">금지 단어</legend>
                 <div className="space-y-3">
                   <div className="flex gap-2">
                     <Input
@@ -557,24 +683,31 @@ export default function Home() {
                       value={forbiddenWordsInput}
                       onChange={(e) => setForbiddenWordsInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleForbiddenWordsAdd())}
+                      className="flex-1 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                      aria-describedby="forbidden-words-help"
                     />
                     <Button 
                       type="button" 
                       variant="outline" 
                       onClick={handleForbiddenWordsAdd}
+                      className="transition-all duration-200 hover:bg-primary hover:text-primary-foreground"
                     >
                       추가
                     </Button>
                   </div>
-                  {formData.generationOptions.forbiddenWords.length > 0 && (
+                  <p id="forbidden-words-help" className="text-xs text-muted-foreground">
+                    Enter 키를 누르거나 추가 버튼을 클릭하여 금지 단어를 추가할 수 있습니다
+                  </p>
+                  {watchedValues.generationOptions?.forbiddenWords && watchedValues.generationOptions.forbiddenWords.length > 0 && (
                     <div className="flex flex-wrap gap-2">
-                      {formData.generationOptions.forbiddenWords.map((word, index) => (
-                        <Badge key={index} variant="secondary" className="gap-1">
+                      {watchedValues.generationOptions.forbiddenWords.map((word, index) => (
+                        <Badge key={index} variant="secondary" className="gap-1 hover:bg-destructive hover:text-destructive-foreground transition-all duration-200">
                           {word}
                           <button
                             type="button"
-                            onClick={() => handleForbiddenWordsRemove(word)}
-                            className="ml-1 hover:text-destructive"
+                            onClick={() => word && handleForbiddenWordsRemove(word)}
+                            className="ml-1 hover:scale-110 transition-transform"
+                            aria-label={`${word} 제거`}
                           >
                             ×
                           </button>
@@ -583,76 +716,266 @@ export default function Home() {
                     </div>
                   )}
                 </div>
-              </div>
+              </fieldset>
             </CardContent>
           </Card>
 
           {/* 생성 버튼 */}
-          <div className="text-center">
+          <div className="text-center space-y-4">
             <Button 
               type="submit" 
               size="lg" 
-              disabled={!isFormValid || isGenerating}
-              className="px-8 py-3"
+              disabled={!isValid || isGenerating}
+              className="px-8 py-3 transition-all duration-200 hover:scale-105 disabled:hover:scale-100"
+              aria-describedby="submit-status"
             >
               {isGenerating ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" aria-hidden="true"></div>
                   생성 중...
                 </>
               ) : (
                 "🚀 마케팅 문구 생성하기"
               )}
             </Button>
+            
+            {/* 폼 상태 표시 */}
+            <div id="submit-status" className="text-sm text-muted-foreground" role="status" aria-live="polite">
+              {!isDirty && "폼을 작성해주세요"}
+              {isDirty && !isValid && "모든 필수 항목을 입력해주세요"}
+              {isValid && "✅ 폼이 완성되었습니다!"}
+            </div>
           </div>
         </form>
+
+        {/* 결과 출력 영역 */}
+        {isGenerating && (
+          <Card>
+            <CardHeader>
+              <CardTitle>🔄 마케팅 문구 생성 중...</CardTitle>
+              <CardDescription>
+                AI가 당신의 요구사항에 맞는 마케팅 문구를 생성하고 있습니다
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* 스켈레톤 UI */}
+              <div className="space-y-4">
+                {[1, 2, 3].map((index) => (
+                  <div key={index} className="p-4 border rounded-lg space-y-3 animate-pulse">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-6 bg-muted rounded"></div>
+                        <div className="w-16 h-6 bg-muted rounded"></div>
+                      </div>
+                      <div className="w-16 h-8 bg-muted rounded"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-muted rounded w-3/4"></div>
+                      <div className="h-4 bg-muted rounded w-1/2"></div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="w-16 h-6 bg-muted rounded"></div>
+                      <div className="w-20 h-6 bg-muted rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* 진행률 표시 */}
+              <div className="text-center py-4">
+                <div className="inline-flex items-center gap-2 text-muted-foreground">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                  <span>AI가 창의적인 마케팅 문구를 작성하고 있습니다...</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 에러 메시지 */}
+        {apiError && (
+          <Card className="border-destructive">
+            <CardHeader>
+              <CardTitle className="text-destructive flex items-center gap-2">
+                <span>⚠️</span>
+                마케팅 문구 생성 실패
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-destructive mb-4">{apiError}</p>
+              <div className="bg-muted p-4 rounded-lg">
+                <h4 className="font-medium mb-2">문제 해결 방법:</h4>
+                <ul className="text-sm space-y-1">
+                  <li>• 인터넷 연결을 확인해주세요</li>
+                  <li>• 입력한 내용을 다시 확인해주세요</li>
+                  <li>• 잠시 후 다시 시도해주세요</li>
+                  <li>• 문제가 지속되면 관리자에게 문의해주세요</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* 결과 출력 영역 */}
         {results.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>✨ 생성된 마케팅 문구</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <span>✨</span>
+                생성된 마케팅 문구
+                <Badge variant="secondary" className="ml-2">
+                  {results.length}개
+                </Badge>
+              </CardTitle>
               <CardDescription>
-                {results.length}개의 마케팅 문구가 생성되었습니다
+                AI가 생성한 맞춤형 마케팅 문구입니다. 각 문구를 복사하여 사용하세요
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               {results.map((result, index) => (
-                <div key={index} className="p-4 border rounded-lg space-y-3">
+                <div key={index} className="p-6 border rounded-lg space-y-4 hover:shadow-md transition-all duration-200 bg-gradient-to-r from-background to-muted/30">
+                  {/* 헤더 영역 */}
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">
-                        {PLATFORMS.find(p => p.id === result.platform)?.icon} 
-                        {PLATFORMS.find(p => p.id === result.platform)?.name}
+                    <div className="flex items-center gap-3">
+                      {/* 플랫폼 배지 */}
+                      <Badge variant="outline" className="text-sm px-3 py-1">
+                        {PLATFORMS.find(p => p.id === result.platform)?.icon || "📱"} 
+                        {PLATFORMS.find(p => p.id === result.platform)?.name || "플랫폼"}
                       </Badge>
-                      <Badge variant="secondary">
-                        {result.characterCount}자
-                      </Badge>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => navigator.clipboard.writeText(result.content)}
-                    >
-                      📋 복사
-                    </Button>
-                  </div>
-                  <p className="text-lg leading-relaxed">{result.content}</p>
-                  {result.hashtags && result.hashtags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {result.hashtags.map((tag: string, tagIndex: number) => (
-                        <Badge key={tagIndex} variant="outline" className="text-xs">
-                          {tag}
+                      
+                      {/* 메타데이터 */}
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Badge variant="secondary" className="text-xs">
+                          {result.characterCount}자
                         </Badge>
-                      ))}
+                        {result.model && (
+                          <Badge variant="outline" className="text-xs">
+                            {result.model === "gpt-3.5-turbo-instruct" ? "GPT-3.5 Turbo" : result.model}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  )}
+                    
+                    {/* 액션 버튼들 */}
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigator.clipboard.writeText(result.content)}
+                        className="hover:bg-primary hover:text-primary-foreground transition-colors"
+                      >
+                        📋 복사
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          const textToCopy = `${result.content}\n\n${result.hashtags?.join(' ') || ''}`;
+                          navigator.clipboard.writeText(textToCopy);
+                        }}
+                        className="hover:bg-primary hover:text-primary-foreground transition-colors"
+                      >
+                        📝 전체 복사
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* 마케팅 문구 내용 */}
+                  <div className="space-y-3">
+                    <div className="bg-primary/5 p-4 rounded-lg border-l-4 border-primary">
+                      <p className="text-lg leading-relaxed font-medium">{result.content}</p>
+                    </div>
+                    
+                    {/* 해시태그 */}
+                    {result.hashtags && result.hashtags.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-muted-foreground">해시태그</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {result.hashtags.map((tag: string, tagIndex: number) => (
+                            <Badge key={tagIndex} variant="outline" className="text-xs hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* 하단 정보 */}
+                  <div className="flex items-center justify-between pt-3 border-t">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      {result.generatedAt && (
+                        <span>생성: {new Date(result.generatedAt).toLocaleString('ko-KR')}</span>
+                      )}
+                      {result.requestId && (
+                        <span>ID: {result.requestId}</span>
+                      )}
+                    </div>
+                    
+                    {/* 추가 액션 */}
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          // 좋아요 기능 (향후 구현)
+                          console.log('좋아요:', result.id);
+                        }}
+                        className="text-xs hover:text-primary"
+                      >
+                        👍 좋아요
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          // 공유 기능 (향후 구현)
+                          console.log('공유:', result.id);
+                        }}
+                        className="text-xs hover:text-primary"
+                      >
+                        🔗 공유
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               ))}
+              
+              {/* 결과 요약 */}
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-primary">{results.length}</div>
+                    <div className="text-sm text-muted-foreground">생성된 문구</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {Math.round(results.reduce((sum, r) => sum + (r.characterCount || 0), 0) / results.length)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">평균 글자수</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {results.reduce((sum, r) => sum + (r.hashtags?.length || 0), 0)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">총 해시태그</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-purple-600">
+                      {new Set(results.map(r => r.platform)).size}
+                    </div>
+                    <div className="text-sm text-muted-foreground">플랫폼 수</div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
       </Section>
+      
+      {/* 성능 최적화 컴포넌트 */}
+      <PerformanceOptimizer />
     </Container>
+    </ErrorBoundary>
   );
 }
