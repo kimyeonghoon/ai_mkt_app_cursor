@@ -1,5 +1,5 @@
-# 멀티스테이지 빌드
-FROM node:18-alpine AS base
+# 멀티스테이지 빌드 - Node.js 20 LTS 사용
+FROM node:20-alpine AS base
 
 # 의존성 설치 단계
 FROM base AS deps
@@ -8,7 +8,7 @@ WORKDIR /app
 
 # package.json과 package-lock.json 복사
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+RUN npm ci
 
 # 빌드 단계
 FROM base AS builder
