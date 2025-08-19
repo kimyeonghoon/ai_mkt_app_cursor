@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
+import { PerformanceOptimizer } from "@/components/ui/performance-optimizer";
 import Link from "next/link";
 
 interface FormData {
@@ -942,6 +943,9 @@ export default function Home() {
           </Card>
         )}
       </Section>
+      
+      {/* 성능 최적화 컴포넌트 */}
+      <PerformanceOptimizer />
     </Container>
   );
 }
