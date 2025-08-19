@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { PerformanceOptimizer } from "@/components/ui/performance-optimizer";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import Link from "next/link";
 
 interface FormData {
@@ -109,6 +110,9 @@ export default function Home() {
   const [results, setResults] = useState<any[]>([]);
   const [forbiddenWordsInput, setForbiddenWordsInput] = useState("");
   const [apiError, setApiError] = useState<string | null>(null);
+
+  // 에러 상태 관리
+  const [hasError, setHasError] = useState(false);
 
   const {
     register,
@@ -215,11 +219,36 @@ export default function Home() {
 
   const characterCount = watchedValues.valueProposition?.length || 0;
 
+  // 에러가 발생한 경우 에러 UI 표시
+  if (hasError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="text-destructive flex items-center gap-2">
+              <span>⚠️</span>
+              오류가 발생했습니다
+            </CardTitle>
+            <CardDescription>
+              예상치 못한 오류가 발생했습니다. 페이지를 새로고침해주세요.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => window.location.reload()} className="w-full">
+              🔄 페이지 새로고침
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <Container size="lg" padding="lg">
-      <Section spacing="lg">
-        {/* 헤더 */}
-        <div className="text-center space-y-4">
+    <ErrorBoundary>
+      <Container size="lg" padding="lg">
+        <Section spacing="lg">
+          {/* 헤더 */}
+          <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold text-primary">
             🚀 AI 마케팅 문구 생성기
           </h1>
@@ -947,5 +976,7 @@ export default function Home() {
       {/* 성능 최적화 컴포넌트 */}
       <PerformanceOptimizer />
     </Container>
+      </Section>
+    </ErrorBoundary>
   );
 }
