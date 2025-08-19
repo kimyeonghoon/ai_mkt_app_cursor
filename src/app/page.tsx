@@ -976,7 +976,6 @@ export default function Home() {
       {/* 성능 최적화 컴포넌트 */}
       <PerformanceOptimizer />
     </Container>
-      </Section>
     </ErrorBoundary>
   );
 }

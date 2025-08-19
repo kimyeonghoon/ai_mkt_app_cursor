@@ -73,140 +73,203 @@ function generatePlatformPrompt(platform: string, options: any): string {
 스타일: ${options.generationOptions.length === 'short' ? '짧고 임팩트 있는' : options.generationOptions.length === 'medium' ? '적당한 길이의' : '상세하고 긴'}, ${options.generationOptions.tone === 'casual' ? '친근하고 캐주얼한' : options.generationOptions.tone === 'professional' ? '전문적이고 신뢰감 있는' : options.generationOptions.tone === 'emotional' ? '감정적이고 호소력 있는' : options.generationOptions.tone === 'humorous' ? '유머러스하고 재미있는' : '긴급하고 액션 지향적인'}, ${options.generationOptions.ctaStyle === 'direct' ? '직접적인 행동 유도' : options.generationOptions.ctaStyle === 'indirect' ? '간접적인 행동 유도' : options.generationOptions.ctaStyle === 'curiosity' ? '호기심 유발' : '혜택 강조'}`;
 
   switch (platform) {
-    case 'instagram':
-      return `${basePrompt}
+         case 'instagram':
+       return `${basePrompt}
+ 
+ 인스타그램용으로 다음 요구사항을 만족하는 마케팅 문구를 ${options.generationOptions.count}개 생성해주세요:
+ - 해시태그 포함 (3-5개)
+ - 시각적이고 임팩트 있는 표현
+ - 150자 이내
+ - 이모지 적절히 사용
+ - 젊고 트렌디한 톤
+ 
+ ${options.generationOptions.emotionKeywords.length > 0 ? `감정 키워드: ${options.generationOptions.emotionKeywords.join(', ')}` : ''}
+ ${options.generationOptions.forbiddenWords.length > 0 ? `금지 단어: ${options.generationOptions.forbiddenWords.join(', ')}` : ''}
+ 
+ ${options.generationOptions.count}개의 마케팅 문구를 JSON 형식으로 응답해주세요:
+ {
+   "marketingCopies": [
+     {
+       "content": "마케팅 문구 내용 1",
+       "hashtags": ["#해시태그1", "#해시태그2"],
+       "characterCount": 숫자
+     },
+     {
+       "content": "마케팅 문구 내용 2",
+       "hashtags": ["#해시태그3", "#해시태그4"],
+       "characterCount": 숫자
+     }
+   ]
+ }`;
 
-인스타그램용으로 다음 요구사항을 만족하는 마케팅 문구를 생성해주세요:
-- 해시태그 포함 (3-5개)
-- 시각적이고 임팩트 있는 표현
-- 150자 이내
-- 이모지 적절히 사용
-- 젊고 트렌디한 톤
+         case 'facebook':
+       return `${basePrompt}
+ 
+ 페이스북용으로 다음 요구사항을 만족하는 마케팅 문구를 ${options.generationOptions.count}개 생성해주세요:
+ - 커뮤니티 중심의 친근한 톤
+ - 상세한 정보와 스토리텔링
+ - 300자 이내
+ - 참여를 유도하는 질문 포함
+ - 신뢰감 있는 표현
+ 
+ ${options.generationOptions.emotionKeywords.length > 0 ? `감정 키워드: ${options.generationOptions.emotionKeywords.join(', ')}` : ''}
+ ${options.generationOptions.forbiddenWords.length > 0 ? `금지 단어: ${options.generationOptions.forbiddenWords.join(', ')}` : ''}
+ 
+ ${options.generationOptions.count}개의 마케팅 문구를 JSON 형식으로 응답해주세요:
+ {
+   "marketingCopies": [
+     {
+       "content": "마케팅 문구 내용 1",
+       "hashtags": ["#해시태그1", "#해시태그2"],
+       "characterCount": 숫자
+     },
+     {
+       "content": "마케팅 문구 내용 2",
+       "hashtags": ["#해시태그3", "#해시태그4"],
+       "characterCount": 숫자
+     }
+   ]
+ }`;
 
-${options.generationOptions.emotionKeywords.length > 0 ? `감정 키워드: ${options.generationOptions.emotionKeywords.join(', ')}` : ''}
-${options.generationOptions.forbiddenWords.length > 0 ? `금지 단어: ${options.generationOptions.forbiddenWords.join(', ')}` : ''}
+         case 'youtube':
+       return `${basePrompt}
+ 
+ 유튜브용으로 다음 요구사항을 만족하는 마케팅 문구를 ${options.generationOptions.count}개 생성해주세요:
+ - 썸네일과 설명에 적합
+ - 동영상 콘텐츠 특성 반영
+ - 200자 이내
+ - 클릭을 유도하는 표현
+ - 구체적인 혜택 명시
+ 
+ ${options.generationOptions.emotionKeywords.length > 0 ? `감정 키워드: ${options.generationOptions.emotionKeywords.join(', ')}` : ''}
+ ${options.generationOptions.forbiddenWords.length > 0 ? `금지 단어: ${options.generationOptions.forbiddenWords.join(', ')}` : ''}
+ 
+ ${options.generationOptions.count}개의 마케팅 문구를 JSON 형식으로 응답해주세요:
+ {
+   "marketingCopies": [
+     {
+       "content": "마케팅 문구 내용 1",
+       "hashtags": ["#해시태그1", "#해시태그2"],
+       "characterCount": 숫자
+     },
+     {
+       "content": "마케팅 문구 내용 2",
+       "hashtags": ["#해시태그3", "#해시태그4"],
+       "characterCount": 숫자
+     }
+   ]
+ }`;
 
-JSON 형식으로 응답해주세요:
-{
-  "content": "마케팅 문구 내용",
-  "hashtags": ["#해시태그1", "#해시태그2"],
-  "characterCount": 숫자
-}`;
+     case 'blog':
+       return `${basePrompt}
+ 
+ 블로그/웹사이트용으로 다음 요구사항을 만족하는 마케팅 문구를 ${options.generationOptions.count}개 생성해주세요:
+ - SEO 최적화된 키워드 포함
+ - 상세하고 정보가 풍부한 내용
+ - 400자 이내
+ - 전문적이고 신뢰감 있는 톤
+ - 구체적인 데이터나 통계 언급
+ 
+ ${options.generationOptions.emotionKeywords.length > 0 ? `감정 키워드: ${options.generationOptions.emotionKeywords.join(', ')}` : ''}
+ ${options.generationOptions.forbiddenWords.length > 0 ? `금지 단어: ${options.generationOptions.forbiddenWords.join(', ')}` : ''}
+ 
+ ${options.generationOptions.count}개의 마케팅 문구를 JSON 형식으로 응답해주세요:
+ {
+   "marketingCopies": [
+     {
+       "content": "마케팅 문구 내용 1",
+       "hashtags": ["#해시태그1", "#해시태그2"],
+       "characterCount": 숫자
+     },
+     {
+       "content": "마케팅 문구 내용 2",
+       "hashtags": ["#해시태그3", "#해시태그4"],
+       "characterCount": 숫자
+     }
+   ]
+ }`;
 
-    case 'facebook':
-      return `${basePrompt}
+     case 'email':
+       return `${basePrompt}
+ 
+ 이메일 마케팅용으로 다음 요구사항을 만족하는 마케팅 문구를 ${options.generationOptions.count}개 생성해주세요:
+ - 개인화된 메시지
+ - 명확한 제목과 본문
+ - 250자 이내
+ - 행동 유도가 명확한 CTA
+ - 전문적이면서도 친근한 톤
+ 
+ ${options.generationOptions.emotionKeywords.length > 0 ? `감정 키워드: ${options.generationOptions.emotionKeywords.join(', ')}` : ''}
+ ${options.generationOptions.forbiddenWords.length > 0 ? `금지 단어: ${options.generationOptions.forbiddenWords.join(', ')}` : ''}
+ 
+ ${options.generationOptions.count}개의 마케팅 문구를 JSON 형식으로 응답해주세요:
+ {
+   "marketingCopies": [
+     {
+       "content": "마케팅 문구 내용 1",
+       "hashtags": ["#해시태그1", "#해시태그2"],
+       "characterCount": 숫자
+     },
+     {
+       "content": "마케팅 문구 내용 2",
+       "hashtags": ["#해시태그3", "#해시태그4"],
+       "characterCount": 숫자
+     }
+   ]
+ }`;
 
-페이스북용으로 다음 요구사항을 만족하는 마케팅 문구를 생성해주세요:
-- 커뮤니티 중심의 친근한 톤
-- 상세한 정보와 스토리텔링
-- 300자 이내
-- 참여를 유도하는 질문 포함
-- 신뢰감 있는 표현
+     case 'kakao':
+       return `${basePrompt}
+ 
+ 카카오톡/문자용으로 다음 요구사항을 만족하는 마케팅 문구를 ${options.generationOptions.count}개 생성해주세요:
+ - 간결하고 직접적인 메시지
+ - 100자 이내
+ - 즉시 행동 유도
+ - 친근하고 신뢰감 있는 톤
+ - 구체적인 혜택과 기한 명시
+ 
+ ${options.generationOptions.emotionKeywords.length > 0 ? `감정 키워드: ${options.generationOptions.emotionKeywords.join(', ')}` : ''}
+ ${options.generationOptions.forbiddenWords.length > 0 ? `금지 단어: ${options.generationOptions.forbiddenWords.join(', ')}` : ''}
+ 
+ ${options.generationOptions.count}개의 마케팅 문구를 JSON 형식으로 응답해주세요:
+ {
+   "marketingCopies": [
+     {
+       "content": "마케팅 문구 내용 1",
+       "hashtags": ["#해시태그1", "#해시태그2"],
+       "characterCount": 숫자
+     },
+     {
+       "content": "마케팅 문구 내용 2",
+       "hashtags": ["#해시태그3", "#해시태그4"],
+       "characterCount": 숫자
+     }
+   ]
+ }`;
 
-${options.generationOptions.emotionKeywords.length > 0 ? `감정 키워드: ${options.generationOptions.emotionKeywords.join(', ')}` : ''}
-${options.generationOptions.forbiddenWords.length > 0 ? `금지 단어: ${options.generationOptions.forbiddenWords.join(', ')}` : ''}
-
-JSON 형식으로 응답해주세요:
-{
-  "content": "마케팅 문구 내용",
-  "hashtags": ["#해시태그1", "#해시태그2"],
-  "characterCount": 숫자
-}`;
-
-    case 'youtube':
-      return `${basePrompt}
-
-유튜브용으로 다음 요구사항을 만족하는 마케팅 문구를 생성해주세요:
-- 썸네일과 설명에 적합
-- 동영상 콘텐츠 특성 반영
-- 200자 이내
-- 클릭을 유도하는 표현
-- 구체적인 혜택 명시
-
-${options.generationOptions.emotionKeywords.length > 0 ? `감정 키워드: ${options.generationOptions.emotionKeywords.join(', ')}` : ''}
-${options.generationOptions.forbiddenWords.length > 0 ? `금지 단어: ${options.generationOptions.forbiddenWords.join(', ')}` : ''}
-
-JSON 형식으로 응답해주세요:
-{
-  "content": "마케팅 문구 내용",
-  "hashtags": ["#해시태그1", "#해시태그2"],
-  "characterCount": 숫자
-}`;
-
-    case 'blog':
-      return `${basePrompt}
-
-블로그/웹사이트용으로 다음 요구사항을 만족하는 마케팅 문구를 생성해주세요:
-- SEO 최적화된 키워드 포함
-- 상세하고 정보가 풍부한 내용
-- 400자 이내
-- 전문적이고 신뢰감 있는 톤
-- 구체적인 데이터나 통계 언급
-
-${options.generationOptions.emotionKeywords.length > 0 ? `감정 키워드: ${options.generationOptions.emotionKeywords.join(', ')}` : ''}
-${options.generationOptions.forbiddenWords.length > 0 ? `금지 단어: ${options.generationOptions.forbiddenWords.join(', ')}` : ''}
-
-JSON 형식으로 응답해주세요:
-{
-  "content": "마케팅 문구 내용",
-  "hashtags": ["#해시태그1", "#해시태그2"],
-  "characterCount": 숫자
-}`;
-
-    case 'email':
-      return `${basePrompt}
-
-이메일 마케팅용으로 다음 요구사항을 만족하는 마케팅 문구를 생성해주세요:
-- 개인화된 메시지
-- 명확한 제목과 본문
-- 250자 이내
-- 행동 유도가 명확한 CTA
-- 전문적이면서도 친근한 톤
-
-${options.generationOptions.emotionKeywords.length > 0 ? `감정 키워드: ${options.generationOptions.emotionKeywords.join(', ')}` : ''}
-${options.generationOptions.forbiddenWords.length > 0 ? `금지 단어: ${options.generationOptions.forbiddenWords.join(', ')}` : ''}
-
-JSON 형식으로 응답해주세요:
-{
-  "content": "마케팅 문구 내용",
-  "hashtags": ["#해시태그1", "#해시태그2"],
-  "characterCount": 숫자
-}`;
-
-    case 'kakao':
-      return `${basePrompt}
-
-카카오톡/문자용으로 다음 요구사항을 만족하는 마케팅 문구를 생성해주세요:
-- 간결하고 직접적인 메시지
-- 100자 이내
-- 즉시 행동 유도
-- 친근하고 신뢰감 있는 톤
-- 구체적인 혜택과 기한 명시
-
-${options.generationOptions.emotionKeywords.length > 0 ? `감정 키워드: ${options.generationOptions.emotionKeywords.join(', ')}` : ''}
-${options.generationOptions.forbiddenWords.length > 0 ? `금지 단어: ${options.generationOptions.forbiddenWords.join(', ')}` : ''}
-
-JSON 형식으로 응답해주세요:
-{
-  "content": "마케팅 문구 내용",
-  "hashtags": ["#해시태그1", "#해시태그2"],
-  "characterCount": 숫자
-}`;
-
-    default:
-      return `${basePrompt}
-
-일반적인 마케팅 문구를 생성해주세요.
-
-${options.generationOptions.emotionKeywords.length > 0 ? `감정 키워드: ${options.generationOptions.emotionKeywords.join(', ')}` : ''}
-${options.generationOptions.forbiddenWords.length > 0 ? `금지 단어: ${options.generationOptions.forbiddenWords.join(', ')}` : ''}
-
-JSON 형식으로 응답해주세요:
-{
-  "content": "마케팅 문구 내용",
-  "hashtags": ["#해시태그1", "#해시태그2"],
-  "characterCount": 숫자
-}`;
+     default:
+       return `${basePrompt}
+ 
+ 일반적인 마케팅 문구를 ${options.generationOptions.count}개 생성해주세요.
+ 
+ ${options.generationOptions.emotionKeywords.length > 0 ? `감정 키워드: ${options.generationOptions.emotionKeywords.join(', ')}` : ''}
+ ${options.generationOptions.forbiddenWords.length > 0 ? `금지 단어: ${options.generationOptions.forbiddenWords.join(', ')}` : ''}
+ 
+ ${options.generationOptions.count}개의 마케팅 문구를 JSON 형식으로 응답해주세요:
+ {
+   "marketingCopies": [
+     {
+       "content": "마케팅 문구 내용 1",
+       "hashtags": ["#해시태그1", "#해시태그2"],
+       "characterCount": 숫자
+     },
+     {
+       "content": "마케팅 문구 내용 2",
+       "hashtags": ["#해시태그3", "#해시태그4"],
+       "characterCount": 숫자
+     }
+   ]
+ }`;
   }
 }
 
@@ -252,22 +315,22 @@ export async function POST(request: NextRequest) {
       throw validationError;
     }
 
-    // OpenAI API 호출
+    // OpenAI API 호출 - 여러 개 생성
     const prompt = generatePlatformPrompt(validatedData.platform, validatedData);
     
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo-instruct", // 비용 효율적인 모델 사용
+      model: "gpt-3.5-turbo", // 안정적인 모델 사용
       messages: [
         {
           role: "system",
-          content: "당신은 전문적인 마케팅 문구 작성자입니다. 주어진 요구사항에 맞는 창의적이고 효과적인 마케팅 문구를 생성해주세요."
+          content: `당신은 전문적인 마케팅 문구 작성자입니다. 주어진 요구사항에 맞는 창의적이고 효과적인 마케팅 문구를 ${validatedData.generationOptions.count}개 생성해주세요. 응답은 반드시 JSON 형식으로 제공해주세요.`
         },
         {
           role: "user",
           content: prompt
         }
       ],
-      max_tokens: 1000,
+             max_tokens: Math.min(1000 * validatedData.generationOptions.count, 4000), // 토큰 수를 생성 개수에 맞게 조정하되 최대 4000으로 제한
       temperature: 0.7,
     });
 
@@ -302,24 +365,41 @@ export async function POST(request: NextRequest) {
     }
 
     // 응답 데이터 검증 및 정리
-    const marketingCopy = {
-      id: Date.now(),
-      content: parsedResponse.content || responseText.trim(),
-      platform: validatedData.platform,
-      hashtags: parsedResponse.hashtags || [],
-      characterCount: parsedResponse.characterCount || (parsedResponse.content || responseText.trim()).length,
-      model: "gpt-3.5-turbo-instruct",
-      generatedAt: new Date().toISOString(),
-      requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    };
+    let marketingCopies = [];
+    
+    if (parsedResponse.marketingCopies && Array.isArray(parsedResponse.marketingCopies)) {
+      // 새로운 형식: marketingCopies 배열
+      marketingCopies = parsedResponse.marketingCopies.map((copy: any, index: number) => ({
+        id: Date.now() + index,
+        content: copy.content || `마케팅 문구 ${index + 1}`,
+        platform: validatedData.platform,
+        hashtags: copy.hashtags || [],
+        characterCount: copy.characterCount || (copy.content || '').length,
+        model: "gpt-3.5-turbo",
+        generatedAt: new Date().toISOString(),
+        requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      }));
+    } else {
+      // 기존 형식: 단일 응답 (하위 호환성)
+      marketingCopies = [{
+        id: Date.now(),
+        content: parsedResponse.content || responseText.trim(),
+        platform: validatedData.platform,
+        hashtags: parsedResponse.hashtags || [],
+        characterCount: parsedResponse.characterCount || (parsedResponse.content || responseText.trim()).length,
+        model: "gpt-3.5-turbo",
+        generatedAt: new Date().toISOString(),
+        requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      }];
+    }
 
     // 성공 응답
     return NextResponse.json({
       success: true,
       data: {
-        marketingCopies: [marketingCopy],
-        generatedAt: marketingCopy.generatedAt,
-        requestId: marketingCopy.requestId,
+        marketingCopies: marketingCopies,
+        generatedAt: new Date().toISOString(),
+        requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         rateLimit: {
           remaining: rateLimit.remaining,
           resetTime: rateLimit.resetTime
