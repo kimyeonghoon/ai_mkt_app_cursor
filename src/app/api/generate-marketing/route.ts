@@ -58,10 +58,14 @@ function checkRateLimit(identifier: string): { allowed: boolean; remaining: numb
   return { allowed: true, remaining: RATE_LIMIT.MAX_REQUESTS - userLimit.count, resetTime: userLimit.resetTime };
 }
 
-// OpenAI 클라이언트 초기화
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// OpenAI 클라이언트 초기화 함수 (런타임에만 호출)
+function createOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY 환경변수가 설정되지 않았습니다.');
+  }
+  return new OpenAI({ apiKey });
+}
 
 // 플랫폼별 프롬프트 생성 함수
 function generatePlatformPrompt(platform: string, options: any): string {
@@ -318,6 +322,7 @@ export async function POST(request: NextRequest) {
     // OpenAI API 호출 - 여러 개 생성
     const prompt = generatePlatformPrompt(validatedData.platform, validatedData);
     
+    const openai = createOpenAIClient(); // 런타임에 클라이언트 생성
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo", // 안정적인 모델 사용
       messages: [
