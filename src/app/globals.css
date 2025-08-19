@@ -76,6 +76,91 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* 디자인 시스템 확장 CSS 변수들 */
+  
+  /* Primary 색상 팔레트 */
+  --color-primary-50: oklch(0.98 0.01 240);
+  --color-primary-100: oklch(0.95 0.02 240);
+  --color-primary-200: oklch(0.9 0.04 240);
+  --color-primary-300: oklch(0.85 0.06 240);
+  --color-primary-400: oklch(0.8 0.08 240);
+  --color-primary-500: oklch(0.75 0.1 240);
+  --color-primary-600: oklch(0.7 0.12 240);
+  --color-primary-700: oklch(0.65 0.14 240);
+  --color-primary-800: oklch(0.6 0.16 240);
+  --color-primary-900: oklch(0.55 0.18 240);
+
+  /* Neutral 색상 팔레트 */
+  --color-neutral-50: oklch(0.98 0.005 240);
+  --color-neutral-100: oklch(0.95 0.01 240);
+  --color-neutral-200: oklch(0.9 0.015 240);
+  --color-neutral-300: oklch(0.85 0.02 240);
+  --color-neutral-400: oklch(0.8 0.025 240);
+  --color-neutral-500: oklch(0.75 0.03 240);
+  --color-neutral-600: oklch(0.7 0.035 240);
+  --color-neutral-700: oklch(0.65 0.04 240);
+  --color-neutral-800: oklch(0.6 0.045 240);
+  --color-neutral-900: oklch(0.55 0.05 240);
+
+  /* Success 색상 팔레트 */
+  --color-success-50: oklch(0.98 0.02 140);
+  --color-success-100: oklch(0.95 0.04 140);
+  --color-success-500: oklch(0.7 0.15 140);
+  --color-success-600: oklch(0.65 0.17 140);
+  --color-success-700: oklch(0.6 0.19 140);
+
+  /* Warning 색상 팔레트 */
+  --color-warning-50: oklch(0.98 0.02 60);
+  --color-warning-100: oklch(0.95 0.04 60);
+  --color-warning-500: oklch(0.7 0.15 60);
+  --color-warning-600: oklch(0.65 0.17 60);
+  --color-warning-700: oklch(0.6 0.19 60);
+
+  /* Error 색상 팔레트 */
+  --color-error-50: oklch(0.98 0.02 20);
+  --color-error-100: oklch(0.95 0.04 20);
+  --color-error-500: oklch(0.7 0.15 20);
+  --color-error-600: oklch(0.65 0.17 20);
+  --color-error-700: oklch(0.6 0.19 20);
+
+  /* 간격 시스템 (4px 단위 기반) */
+  --spacing-0: 0px;
+  --spacing-1: 0.25rem;   /* 4px */
+  --spacing-2: 0.5rem;    /* 8px */
+  --spacing-3: 0.75rem;   /* 12px */
+  --spacing-4: 1rem;      /* 16px */
+  --spacing-5: 1.25rem;   /* 20px */
+  --spacing-6: 1.5rem;    /* 24px */
+  --spacing-8: 2rem;      /* 32px */
+  --spacing-10: 2.5rem;   /* 40px */
+  --spacing-12: 3rem;     /* 48px */
+  --spacing-16: 4rem;     /* 64px */
+  --spacing-20: 5rem;     /* 80px */
+  --spacing-24: 6rem;     /* 96px */
+
+  /* 그림자 시스템 */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* 애니메이션 지속 시간 */
+  --duration-75: 75ms;
+  --duration-100: 100ms;
+  --duration-150: 150ms;
+  --duration-200: 200ms;
+  --duration-300: 300ms;
+  --duration-500: 500ms;
+  --duration-700: 700ms;
+  --duration-1000: 1000ms;
+
+  /* 애니메이션 이징 */
+  --ease-linear: linear;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark {
@@ -110,6 +195,47 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* 다크모드용 디자인 시스템 색상 */
+  --color-primary-50: oklch(0.15 0.01 240);
+  --color-primary-100: oklch(0.2 0.02 240);
+  --color-primary-200: oklch(0.25 0.04 240);
+  --color-primary-300: oklch(0.3 0.06 240);
+  --color-primary-400: oklch(0.35 0.08 240);
+  --color-primary-500: oklch(0.4 0.1 240);
+  --color-primary-600: oklch(0.45 0.12 240);
+  --color-primary-700: oklch(0.5 0.14 240);
+  --color-primary-800: oklch(0.55 0.16 240);
+  --color-primary-900: oklch(0.6 0.18 240);
+
+  --color-neutral-50: oklch(0.15 0.005 240);
+  --color-neutral-100: oklch(0.2 0.01 240);
+  --color-neutral-200: oklch(0.25 0.015 240);
+  --color-neutral-300: oklch(0.3 0.02 240);
+  --color-neutral-400: oklch(0.35 0.025 240);
+  --color-neutral-500: oklch(0.4 0.03 240);
+  --color-neutral-600: oklch(0.45 0.035 240);
+  --color-neutral-700: oklch(0.5 0.04 240);
+  --color-neutral-800: oklch(0.55 0.045 240);
+  --color-neutral-900: oklch(0.6 0.05 240);
+
+  --color-success-50: oklch(0.15 0.02 140);
+  --color-success-100: oklch(0.2 0.04 140);
+  --color-success-500: oklch(0.45 0.15 140);
+  --color-success-600: oklch(0.5 0.17 140);
+  --color-success-700: oklch(0.55 0.19 140);
+
+  --color-warning-50: oklch(0.15 0.02 60);
+  --color-warning-100: oklch(0.2 0.04 60);
+  --color-warning-500: oklch(0.45 0.15 60);
+  --color-warning-600: oklch(0.5 0.17 60);
+  --color-warning-700: oklch(0.55 0.19 60);
+
+  --color-error-50: oklch(0.15 0.02 20);
+  --color-error-100: oklch(0.2 0.04 20);
+  --color-error-500: oklch(0.45 0.15 20);
+  --color-error-600: oklch(0.5 0.17 20);
+  --color-error-700: oklch(0.55 0.19 20);
 }
 
 @layer base {
@@ -119,4 +245,40 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* 디자인 시스템 유틸리티 클래스들 */
+@layer utilities {
+  /* 간격 유틸리티 */
+  .space-4 { gap: var(--spacing-4); }
+  .space-6 { gap: var(--spacing-6); }
+  .space-8 { gap: var(--spacing-8); }
+  .space-10 { gap: var(--spacing-10); }
+  .space-12 { gap: var(--spacing-12); }
+  .space-16 { gap: var(--spacing-16); }
+  .space-20 { gap: var(--spacing-20); }
+  .space-24 { gap: var(--spacing-24); }
+
+  /* 그림자 유틸리티 */
+  .shadow-xs { box-shadow: var(--shadow-xs); }
+  .shadow-sm { box-shadow: var(--shadow-sm); }
+  .shadow-md { box-shadow: var(--shadow-md); }
+  .shadow-lg { box-shadow: var(--shadow-lg); }
+  .shadow-xl { box-shadow: var(--shadow-xl); }
+
+  /* 애니메이션 지속 시간 */
+  .duration-75 { transition-duration: var(--duration-75); }
+  .duration-100 { transition-duration: var(--duration-100); }
+  .duration-150 { transition-duration: var(--duration-150); }
+  .duration-200 { transition-duration: var(--duration-200); }
+  .duration-300 { transition-duration: var(--duration-300); }
+  .duration-500 { transition-duration: var(--duration-500); }
+  .duration-700 { transition-duration: var(--duration-700); }
+  .duration-1000 { transition-duration: var(--duration-1000); }
+
+  /* 애니메이션 이징 */
+  .ease-linear { transition-timing-function: var(--ease-linear); }
+  .ease-in { transition-timing-function: var(--ease-in); }
+  .ease-out { transition-timing-function: var(--ease-out); }
+  .ease-in-out { transition-timing-function: var(--ease-in-out); }
 }
