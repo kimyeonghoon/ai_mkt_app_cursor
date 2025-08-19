@@ -243,91 +243,110 @@ export default function Home() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           {/* 가치 제언 입력 섹션 */}
-          <Card>
+          <Card className="focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
             <CardHeader>
-              <CardTitle>💡 가치 제언 입력</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <span role="img" aria-label="가치 제언">💡</span>
+                가치 제언 입력
+              </CardTitle>
               <CardDescription>
                 제품/서비스의 핵심 가치와 혜택을 명확하게 설명해주세요
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="valueProposition">가치 제언 *</Label>
+                <Label htmlFor="valueProposition" className="text-base font-semibold">
+                  가치 제언 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </Label>
                 <div className="relative">
                   <Textarea
                     id="valueProposition"
                     placeholder="예시: 건강한 식습관으로 더 멋진 20대 되어보세요! 나에게 꼭 맞는 영양 관리 서비스로 쉽고 편리하게 시작해보세요."
                     {...register("valueProposition")}
-                    className={`min-h-[120px] resize-none ${
-                      errors.valueProposition ? "border-destructive focus:border-destructive" : ""
+                    className={`min-h-[120px] resize-none transition-all duration-200 ${
+                      errors.valueProposition ? "border-destructive focus:border-destructive ring-destructive/20" : "focus:ring-2 focus:ring-primary/20"
                     }`}
                     maxLength={500}
+                    aria-describedby={errors.valueProposition ? "valueProposition-error" : "valueProposition-help"}
+                    aria-invalid={!!errors.valueProposition}
                   />
-                  <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
+                  <div className="absolute bottom-2 right-2 text-xs text-muted-foreground bg-background px-2 py-1 rounded">
                     {characterCount}/500
                   </div>
                 </div>
                 {errors.valueProposition && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <span className="text-red-500">⚠️</span>
+                  <p id="valueProposition-error" className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
                     {errors.valueProposition.message}
                   </p>
                 )}
+                <p id="valueProposition-help" className="text-xs text-muted-foreground">
+                  최소 10자 이상, 최대 500자까지 입력 가능합니다
+                </p>
               </div>
             </CardContent>
           </Card>
 
           {/* 타겟팅 옵션 섹션 */}
-          <Card>
+          <Card className="focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
             <CardHeader>
-              <CardTitle>🎯 타겟팅 옵션</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <span role="img" aria-label="타겟팅">🎯</span>
+                타겟팅 옵션
+              </CardTitle>
               <CardDescription>
                 마케팅 문구를 받을 타겟 고객을 정의하세요
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* 성별 */}
-              <div className="space-y-3">
-                <Label>성별 *</Label>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  성별 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
                 <RadioGroup 
                   value={watchedValues.targeting?.gender || "all"} 
                   onValueChange={(value) => setValue("targeting.gender", value, { shouldValidate: true })}
+                  className="grid grid-cols-2 md:grid-cols-4 gap-4"
                 >
-                  <div className="flex gap-4">
-                    {[
-                      { id: "all", name: "전체" },
-                      { id: "male", name: "남성" },
-                      { id: "female", name: "여성" },
-                      { id: "other", name: "기타" }
-                    ].map(gender => (
-                      <div key={gender.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={gender.id} id={gender.id} />
-                        <Label htmlFor={gender.id}>{gender.name}</Label>
-                      </div>
-                    ))}
-                  </div>
+                  {[
+                    { id: "all", name: "전체", description: "모든 성별" },
+                    { id: "male", name: "남성", description: "남성 타겟" },
+                    { id: "female", name: "여성", description: "여성 타겟" },
+                    { id: "other", name: "기타", description: "기타 성별" }
+                  ].map(gender => (
+                    <div key={gender.id} className="flex items-center space-x-2 p-3 border rounded-lg hover:border-primary transition-colors">
+                      <RadioGroupItem value={gender.id} id={gender.id} />
+                      <Label htmlFor={gender.id} className="cursor-pointer flex-1">
+                        <div className="font-medium">{gender.name}</div>
+                        <div className="text-xs text-muted-foreground">{gender.description}</div>
+                      </Label>
+                    </div>
+                  ))}
                 </RadioGroup>
                 {errors.targeting?.gender && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <span className="text-red-500">⚠️</span>
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
                     {errors.targeting.gender.message}
                   </p>
                 )}
-              </div>
+              </fieldset>
 
               {/* 연령대 */}
-              <div className="space-y-3">
-                <Label>연령대 *</Label>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  연령대 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {[
-                    { id: "10s", name: "10대" },
-                    { id: "20s", name: "20대" },
-                    { id: "30s", name: "30대" },
-                    { id: "40s", name: "40대" },
-                    { id: "50s", name: "50대" },
-                    { id: "60s", name: "60대 이상" }
+                    { id: "10s", name: "10대", description: "10-19세" },
+                    { id: "20s", name: "20대", description: "20-29세" },
+                    { id: "30s", name: "30대", description: "30-39세" },
+                    { id: "40s", name: "40대", description: "40-49세" },
+                    { id: "50s", name: "50대", description: "50-59세" },
+                    { id: "60s", name: "60대 이상", description: "60세 이상" }
                   ].map(age => (
-                    <div key={age.id} className="flex items-center space-x-2">
+                    <div key={age.id} className="flex items-center space-x-2 p-3 border rounded-lg hover:border-primary transition-colors">
                       <Checkbox
                         id={age.id}
                         checked={watchedValues.targeting?.ageGroups?.includes(age.id) || false}
@@ -335,26 +354,33 @@ export default function Home() {
                           handleAgeGroupChange(age.id, checked as boolean)
                         }
                       />
-                      <Label htmlFor={age.id}>{age.name}</Label>
+                      <Label htmlFor={age.id} className="cursor-pointer flex-1">
+                        <div className="font-medium">{age.name}</div>
+                        <div className="text-xs text-muted-foreground">{age.description}</div>
+                      </Label>
                     </div>
                   ))}
                 </div>
                 {errors.targeting?.ageGroups && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <span className="text-red-500">⚠️</span>
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
                     {errors.targeting.ageGroups.message}
                   </p>
                 )}
-              </div>
+              </fieldset>
 
               {/* 지역 */}
-              <div className="space-y-3">
-                <Label>지역 *</Label>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  지역 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
                 <Select 
                   value={watchedValues.targeting?.region || "all"} 
                   onValueChange={(value) => setValue("targeting.region", value, { shouldValidate: true })}
                 >
-                  <SelectTrigger className={errors.targeting?.region ? "border-destructive" : ""}>
+                  <SelectTrigger className={`transition-all duration-200 ${
+                    errors.targeting?.region ? "border-destructive focus:border-destructive ring-destructive/20" : "focus:ring-2 focus:ring-primary/20"
+                  }`}>
                     <SelectValue placeholder="지역을 선택하세요" />
                   </SelectTrigger>
                   <SelectContent>
@@ -365,30 +391,32 @@ export default function Home() {
                   </SelectContent>
                 </Select>
                 {errors.targeting?.region && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <span className="text-red-500">⚠️</span>
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
                     {errors.targeting.region.message}
                   </p>
                 )}
-              </div>
+              </fieldset>
 
               {/* 관심분야 */}
-              <div className="space-y-3">
-                <Label>관심분야 *</Label>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  관심분야 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {[
-                    { id: "beauty", name: "뷰티" },
-                    { id: "fashion", name: "패션" },
-                    { id: "it", name: "IT" },
-                    { id: "health", name: "건강" },
-                    { id: "education", name: "교육" },
-                    { id: "travel", name: "여행" },
-                    { id: "food", name: "음식" },
-                    { id: "sports", name: "스포츠" },
-                    { id: "culture", name: "문화" },
-                    { id: "other", name: "기타" }
+                    { id: "beauty", name: "뷰티", description: "화장품, 스킨케어" },
+                    { id: "fashion", name: "패션", description: "의류, 액세서리" },
+                    { id: "it", name: "IT", description: "기술, 소프트웨어" },
+                    { id: "health", name: "건강", description: "운동, 영양" },
+                    { id: "education", name: "교육", description: "학습, 강의" },
+                    { id: "travel", name: "여행", description: "관광, 휴가" },
+                    { id: "food", name: "음식", description: "요리, 맛집" },
+                    { id: "sports", name: "스포츠", description: "운동, 경기" },
+                    { id: "culture", name: "문화", description: "예술, 엔터테인먼트" },
+                    { id: "other", name: "기타", description: "기타 분야" }
                   ].map(interest => (
-                    <div key={interest.id} className="flex items-center space-x-2">
+                    <div key={interest.id} className="flex items-center space-x-2 p-3 border rounded-lg hover:border-primary transition-colors">
                       <Checkbox
                         id={interest.id}
                         checked={watchedValues.targeting?.interests?.includes(interest.id) || false}
@@ -396,24 +424,30 @@ export default function Home() {
                           handleInterestChange(interest.id, checked as boolean)
                         }
                       />
-                      <Label htmlFor={interest.id}>{interest.name}</Label>
+                      <Label htmlFor={interest.id} className="cursor-pointer flex-1">
+                        <div className="font-medium">{interest.name}</div>
+                        <div className="text-xs text-muted-foreground">{interest.description}</div>
+                      </Label>
                     </div>
                   ))}
                 </div>
                 {errors.targeting?.interests && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <span className="text-red-500">⚠️</span>
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
                     {errors.targeting.interests.message}
                   </p>
                 )}
-              </div>
+              </fieldset>
             </CardContent>
           </Card>
 
           {/* 플랫폼 선택 섹션 */}
-          <Card>
+          <Card className="focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
             <CardHeader>
-              <CardTitle>📱 플랫폼 선택</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <span role="img" aria-label="플랫폼">📱</span>
+                플랫폼 선택
+              </CardTitle>
               <CardDescription>
                 마케팅 문구를 사용할 플랫폼을 선택하세요
               </CardDescription>
@@ -422,26 +456,24 @@ export default function Home() {
               <RadioGroup 
                 value={watchedValues.platform || ""} 
                 onValueChange={(value) => setValue("platform", value, { shouldValidate: true })}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4"
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {PLATFORMS.map(platform => (
-                    <div key={platform.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-colors">
-                      <RadioGroupItem value={platform.id} id={platform.id} />
-                      <div className="flex-1">
-                        <Label htmlFor={platform.id} className="text-lg font-medium cursor-pointer">
-                          {platform.icon} {platform.name}
-                        </Label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {platform.description}
-                        </p>
+                {PLATFORMS.map(platform => (
+                  <div key={platform.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-all duration-200 hover:shadow-md">
+                    <RadioGroupItem value={platform.id} id={platform.id} />
+                    <Label htmlFor={platform.id} className="text-lg font-medium cursor-pointer flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span role="img" aria-label={platform.name}>{platform.icon}</span>
+                        {platform.name}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                      <p className="text-sm text-muted-foreground font-normal">{platform.description}</p>
+                    </Label>
+                  </div>
+                ))}
               </RadioGroup>
               {errors.platform && (
-                <p className="text-sm text-destructive flex items-center gap-1 mt-3">
-                  <span className="text-red-500">⚠️</span>
+                <p className="text-sm text-destructive flex items-center gap-1 mt-3" role="alert">
+                  <span className="text-red-500" aria-hidden="true">⚠️</span>
                   {errors.platform.message}
                 </p>
               )}
@@ -449,53 +481,57 @@ export default function Home() {
           </Card>
 
           {/* 생성 옵션 섹션 */}
-          <Card>
+          <Card className="focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
             <CardHeader>
-              <CardTitle>⚙️ 생성 옵션</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <span role="img" aria-label="생성 옵션">⚙️</span>
+                생성 옵션
+              </CardTitle>
               <CardDescription>
                 마케팅 문구의 스타일과 특성을 설정하세요
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* 문구 분량 */}
-              <div className="space-y-3">
-                <Label>문구 분량 *</Label>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  문구 분량 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
                 <RadioGroup 
                   value={watchedValues.generationOptions?.length || "medium"} 
                   onValueChange={(value) => setValue("generationOptions.length", value, { shouldValidate: true })}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-4"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {LENGTH_OPTIONS.map(option => (
-                      <div key={option.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-colors">
-                        <RadioGroupItem value={option.id} id={option.id} />
-                        <div className="flex-1">
-                          <Label htmlFor={option.id} className="font-medium cursor-pointer">
-                            {option.name}
-                          </Label>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {option.description}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  {LENGTH_OPTIONS.map(option => (
+                    <div key={option.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-all duration-200 hover:shadow-md">
+                      <RadioGroupItem value={option.id} id={option.id} />
+                      <Label htmlFor={option.id} className="font-medium cursor-pointer flex-1">
+                        <div className="font-semibold mb-1">{option.name}</div>
+                        <p className="text-sm text-muted-foreground font-normal">{option.description}</p>
+                      </Label>
+                    </div>
+                  ))}
                 </RadioGroup>
                 {errors.generationOptions?.length && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <span className="text-red-500">⚠️</span>
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
                     {errors.generationOptions.length.message}
                   </p>
                 )}
-              </div>
+              </fieldset>
 
               {/* 어조/톤 */}
-              <div className="space-y-3">
-                <Label>어조/톤 *</Label>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  어조/톤 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
                 <Select 
                   value={watchedValues.generationOptions?.tone || "casual"} 
                   onValueChange={(value) => setValue("generationOptions.tone", value, { shouldValidate: true })}
                 >
-                  <SelectTrigger className={errors.generationOptions?.tone ? "border-destructive" : ""}>
+                  <SelectTrigger className={`transition-all duration-200 ${
+                    errors.generationOptions?.tone ? "border-destructive focus:border-destructive ring-destructive/20" : "focus:ring-2 focus:ring-primary/20"
+                  }`}>
                     <SelectValue placeholder="어조를 선택하세요" />
                   </SelectTrigger>
                   <SelectContent>
@@ -507,61 +543,61 @@ export default function Home() {
                   </SelectContent>
                 </Select>
                 {errors.generationOptions?.tone && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <span className="text-red-500">⚠️</span>
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
                     {errors.generationOptions.tone.message}
                   </p>
                 )}
-              </div>
+              </fieldset>
 
               {/* 콜투액션 스타일 */}
-              <div className="space-y-3">
-                <Label>콜투액션 스타일 *</Label>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  콜투액션 스타일 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
                 <RadioGroup 
                   value={watchedValues.generationOptions?.ctaStyle || "direct"} 
                   onValueChange={(value) => setValue("generationOptions.ctaStyle", value, { shouldValidate: true })}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {CTA_STYLES.map(style => (
-                      <div key={style.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-colors">
-                        <RadioGroupItem value={style.id} id={style.id} />
-                        <div className="flex-1">
-                          <Label htmlFor={style.id} className="font-medium cursor-pointer">
-                            {style.name}
-                          </Label>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {style.description}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  {CTA_STYLES.map(style => (
+                    <div key={style.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-all duration-200 hover:shadow-md">
+                      <RadioGroupItem value={style.id} id={style.id} />
+                      <Label htmlFor={style.id} className="font-medium cursor-pointer flex-1">
+                        <div className="font-semibold mb-1">{style.name}</div>
+                        <p className="text-sm text-muted-foreground font-normal">{style.description}</p>
+                      </Label>
+                    </div>
+                  ))}
                 </RadioGroup>
                 {errors.generationOptions?.ctaStyle && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <span className="text-red-500">⚠️</span>
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
                     {errors.generationOptions.ctaStyle.message}
                   </p>
                 )}
-              </div>
+              </fieldset>
             </CardContent>
           </Card>
 
           {/* 고급 옵션 섹션 */}
-          <Card>
+          <Card className="focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
             <CardHeader>
-              <CardTitle>🔧 고급 옵션</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <span role="img" aria-label="고급 옵션">🔧</span>
+                고급 옵션
+              </CardTitle>
               <CardDescription>
                 더 세밀한 마케팅 문구 생성을 위한 추가 설정
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* 감정 키워드 */}
-              <div className="space-y-3">
-                <Label>감정 키워드</Label>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">감정 키워드</legend>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {EMOTION_KEYWORDS.map(keyword => (
-                    <div key={keyword.id} className="flex items-center space-x-2">
+                    <div key={keyword.id} className="flex items-center space-x-2 p-3 border rounded-lg hover:border-primary transition-colors">
                       <Checkbox
                         id={keyword.id}
                         checked={watchedValues.generationOptions?.emotionKeywords?.includes(keyword.id) || false}
@@ -569,24 +605,26 @@ export default function Home() {
                           handleEmotionKeywordChange(keyword.id, checked as boolean)
                         }
                       />
-                      <Label htmlFor={keyword.id} className="cursor-pointer">
-                        <Badge variant="outline" className={keyword.color}>
+                      <Label htmlFor={keyword.id} className="cursor-pointer flex-1">
+                        <Badge variant="outline" className={`${keyword.color} hover:scale-105 transition-transform`}>
                           {keyword.name}
                         </Badge>
                       </Label>
                     </div>
                   ))}
                 </div>
-              </div>
+              </fieldset>
 
               {/* 생성 개수 */}
-              <div className="space-y-3">
-                <Label>생성 개수 *</Label>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">
+                  생성 개수 <span className="text-destructive" aria-label="필수 항목">*</span>
+                </legend>
                 <Select 
                   value={watchedValues.generationOptions?.count?.toString() || "3"} 
                   onValueChange={(value) => setValue("generationOptions.count", parseInt(value), { shouldValidate: true })}
                 >
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-32 transition-all duration-200 focus:ring-2 focus:ring-primary/20">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -598,16 +636,16 @@ export default function Home() {
                   </SelectContent>
                 </Select>
                 {errors.generationOptions?.count && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <span className="text-red-500">⚠️</span>
+                  <p className="text-sm text-destructive flex items-center gap-1" role="alert">
+                    <span className="text-red-500" aria-hidden="true">⚠️</span>
                     {errors.generationOptions.count.message}
                   </p>
                 )}
-              </div>
+              </fieldset>
 
               {/* 금지 단어 */}
-              <div className="space-y-3">
-                <Label>금지 단어</Label>
+              <fieldset className="space-y-3">
+                <legend className="text-base font-semibold">금지 단어</legend>
                 <div className="space-y-3">
                   <div className="flex gap-2">
                     <Input
@@ -615,24 +653,31 @@ export default function Home() {
                       value={forbiddenWordsInput}
                       onChange={(e) => setForbiddenWordsInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleForbiddenWordsAdd())}
+                      className="flex-1 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                      aria-describedby="forbidden-words-help"
                     />
                     <Button 
                       type="button" 
                       variant="outline" 
                       onClick={handleForbiddenWordsAdd}
+                      className="transition-all duration-200 hover:bg-primary hover:text-primary-foreground"
                     >
                       추가
                     </Button>
                   </div>
+                  <p id="forbidden-words-help" className="text-xs text-muted-foreground">
+                    Enter 키를 누르거나 추가 버튼을 클릭하여 금지 단어를 추가할 수 있습니다
+                  </p>
                   {watchedValues.generationOptions?.forbiddenWords && watchedValues.generationOptions.forbiddenWords.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {watchedValues.generationOptions.forbiddenWords.map((word, index) => (
-                        <Badge key={index} variant="secondary" className="gap-1">
+                        <Badge key={index} variant="secondary" className="gap-1 hover:bg-destructive hover:text-destructive-foreground transition-all duration-200">
                           {word}
                           <button
                             type="button"
                             onClick={() => word && handleForbiddenWordsRemove(word)}
-                            className="ml-1 hover:text-destructive"
+                            className="ml-1 hover:scale-110 transition-transform"
+                            aria-label={`${word} 제거`}
                           >
                             ×
                           </button>
@@ -641,21 +686,22 @@ export default function Home() {
                     </div>
                   )}
                 </div>
-              </div>
+              </fieldset>
             </CardContent>
           </Card>
 
           {/* 생성 버튼 */}
-          <div className="text-center">
+          <div className="text-center space-y-4">
             <Button 
               type="submit" 
               size="lg" 
               disabled={!isValid || isGenerating}
-              className="px-8 py-3"
+              className="px-8 py-3 transition-all duration-200 hover:scale-105 disabled:hover:scale-100"
+              aria-describedby="submit-status"
             >
               {isGenerating ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" aria-hidden="true"></div>
                   생성 중...
                 </>
               ) : (
@@ -664,7 +710,7 @@ export default function Home() {
             </Button>
             
             {/* 폼 상태 표시 */}
-            <div className="mt-4 text-sm text-muted-foreground">
+            <div id="submit-status" className="text-sm text-muted-foreground" role="status" aria-live="polite">
               {!isDirty && "폼을 작성해주세요"}
               {isDirty && !isValid && "모든 필수 항목을 입력해주세요"}
               {isValid && "✅ 폼이 완성되었습니다!"}
