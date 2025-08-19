@@ -61,7 +61,7 @@ export default function FeedbackSystem() {
     responseRate: 0
   });
   
-  const [selectedCopy, setSelectedCopy] = useState<string | null>(null);
+  const [selectedCopy, setSelectedCopy] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showPendingOnly, setShowPendingOnly] = useState(false);
@@ -209,7 +209,7 @@ export default function FeedbackSystem() {
   };
 
   const filteredFeedbacks = feedbacks.filter(feedback => {
-    const matchesCopy = !selectedCopy || feedback.copyId === selectedCopy;
+    const matchesCopy = selectedCopy === "all" || feedback.copyId === selectedCopy;
     const matchesCategory = selectedCategory === "all" || feedback.category === selectedCategory;
     const matchesSearch = feedback.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          feedback.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -220,7 +220,7 @@ export default function FeedbackSystem() {
   });
 
   const handleAddFeedback = () => {
-    if (!selectedCopy || !newFeedback.comment) return;
+    if (!selectedCopy || selectedCopy === "none" || !newFeedback.comment) return;
     
     const feedback: UserFeedback = {
       id: `feedback-${Date.now()}`,
@@ -414,12 +414,12 @@ export default function FeedbackSystem() {
                 />
               </div>
               <div className="flex gap-2">
-                <Select value={selectedCopy || ""} onValueChange={setSelectedCopy}>
+                <Select value={selectedCopy || "all"} onValueChange={setSelectedCopy}>
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="문구 선택" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">모든 문구</SelectItem>
+                    <SelectItem value="all">모든 문구</SelectItem>
                     {marketingCopies.map(copy => (
                       <SelectItem key={copy.id} value={copy.id}>
                         {copy.platform} - {copy.content.substring(0, 30)}...
@@ -466,11 +466,12 @@ export default function FeedbackSystem() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">마케팅 문구 선택 *</label>
-                      <Select value={selectedCopy || ""} onValueChange={setSelectedCopy}>
+                      <Select value={selectedCopy || "none"} onValueChange={setSelectedCopy}>
                         <SelectTrigger>
                           <SelectValue placeholder="문구를 선택하세요" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="none">문구를 선택하세요</SelectItem>
                           {marketingCopies.map(copy => (
                             <SelectItem key={copy.id} value={copy.id}>
                               {copy.platform} - {copy.content.substring(0, 30)}...
