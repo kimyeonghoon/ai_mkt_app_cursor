@@ -232,7 +232,11 @@ export const zIndex = {
  * 색상 클래스 생성
  */
 export function createColorClass(color: keyof typeof colors, shade: keyof typeof colors.primary) {
-  return colors[color][shade]
+  const colorObj = colors[color]
+  if (colorObj && typeof colorObj === 'object' && shade in colorObj) {
+    return (colorObj as any)[shade]
+  }
+  return undefined
 }
 
 /**

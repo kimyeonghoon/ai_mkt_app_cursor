@@ -315,7 +315,7 @@ export default function PerformanceDashboard() {
                       {metrics.bestPerformingCopy}
                     </p>
                     <div className="flex gap-2">
-                      <Badge variant="success">전환율 {metrics.conversionRate}%</Badge>
+                      <Badge variant="default">전환율 {metrics.conversionRate}%</Badge>
                       <Badge variant="outline">{metrics.topPerformingPlatform}</Badge>
                     </div>
                   </CardContent>

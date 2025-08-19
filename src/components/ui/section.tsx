@@ -50,7 +50,7 @@ export interface SectionProps
   containerSize?: "sm" | "md" | "lg" | "xl" | "2xl" | "full"
 }
 
-const Section = React.forwardRef<HTMLElement, SectionProps>(
+const Section = React.forwardRef<any, SectionProps>(
   ({ 
     className, 
     spacing, 

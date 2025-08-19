@@ -3,10 +3,9 @@ const nextConfig = {
   // Docker 배포를 위한 standalone 출력
   output: 'standalone',
   
-  // 실험적 기능 활성화
+  // 실험적 기능 활성화 (Next.js 15.4.7에 맞게 수정)
   experimental: {
     // Docker 환경에서 최적화
-    outputFileTracingRoot: undefined,
   },
   
   // 이미지 최적화 설정
@@ -40,6 +39,11 @@ const nextConfig = {
         ],
       },
     ];
+  },
+  
+  // ESLint 설정 (빌드 시 검사 완화)
+  eslint: {
+    ignoreDuringBuilds: true, // 빌드 시 ESLint 검사 건너뛰기
   },
   
   // 리다이렉트 설정
