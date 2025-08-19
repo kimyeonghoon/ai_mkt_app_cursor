@@ -1,37 +1,261 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 요구사항 명세서
 
-## Getting Started
+---
 
-First, run the development server:
+## 1. 프로젝트 개요
+- **기술 스택**: Next.js, OpenAI API
+- **목적**: 타겟과 플랫폼에 따른 맞춤형 마케팅 문구 자동 생성
+- **출력 형식**: JSON
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 2. 페이지 구조 및 UI 컴포넌트
+
+### 2.1 메인 입력 폼
+```
+┌─────────────────────────────────────┐
+│ 마케팅 문구 생성기                    │
+├─────────────────────────────────────┤
+│ [가치 제언 입력창]                    │
+│ [타겟팅 옵션]                        │
+│ [생성 옵션]                          │
+│ [생성 버튼]                          │
+├─────────────────────────────────────┤
+│ [결과 출력 영역]                      │
+└─────────────────────────────────────┘
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2.2 필수 입력 필드
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+#### A. 가치 제언 입력창
+- **컴포넌트**: Textarea
+- **속성**: 최대 500자, placeholder 제공
+- **검증**: 필수 입력, 최소 10자 이상
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+#### B. 타겟팅 옵션
+- **성별**: 라디오 버튼 (전체/남성/여성/기타)
+- **연령대**: 체크박스 (10대/20대/30대/40대/50대/60대 이상)
+- **지역**: 드롭다운 (전국/수도권/지방/해외)
+- **관심분야**: 다중선택 (뷰티/패션/IT/건강/교육/여행/음식/스포츠/문화/기타)
 
-## Learn More
+#### C. 플랫폼 옵션
+- **타겟 플랫폼**: 라디오 버튼
+  - 인스타그램 (해시태그 포함)
+  - 페이스북 (긴 형태)
+  - 유튜브 (썸네일용)
+  - 블로그/웹사이트
+  - 이메일 마케팅
+  - 카카오톡/문자
 
-To learn more about Next.js, take a look at the following resources:
+#### D. 생성 옵션
+- **문구 분량**: 라디오 버튼
+  - 짧음 (1-2문장, 소셜미디어용)
+  - 보통 (3-5문장, 일반적)
+  - 길음 (6-10문장, 상세설명용)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **어조/톤**: 드롭다운
+  - 친근하고 캐주얼한
+  - 전문적이고 신뢰감 있는
+  - 감정적이고 호소력 있는
+  - 유머러스하고 재미있는
+  - 긴급하고 액션 지향적인
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **콜투액션 스타일**: 라디오 버튼
+  - 직접적 (지금 구매하세요)
+  - 간접적 (알아보세요)
+  - 호기심 유발 (궁금하지 않으세요?)
+  - 혜택 강조 (놓치지 마세요)
 
-## Deploy on Vercel
+#### E. 고급 옵션 (선택사항)
+- **감정 키워드**: 체크박스 (신뢰/흥미/안전/편리/혁신/프리미엄)
+- **생성 개수**: 숫자 입력 (1-5개, 기본값 3개)
+- **금지 단어**: 텍스트 입력 (쉼표로 구분)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 3. API 연동 사양
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-"# ai_mkt_app_cursor" 
+### 3.1 OpenAI API 호출
+```javascript
+// API 엔드포인트: /api/generate-marketing
+// Method: POST
+// Request Body:
+{
+  "valueProposition": "string",
+  "targeting": {
+    "gender": "string",
+    "ageGroups": ["string"],
+    "region": "string",
+    "interests": ["string"]
+  },
+  "platform": "string",
+  "generationOptions": {
+    "length": "string",
+    "tone": "string",
+    "ctaStyle": "string",
+    "emotionKeywords": ["string"],
+    "count": number,
+    "forbiddenWords": ["string"]
+  }
+}
+```
+
+### 3.2 응답 형식
+```json
+{
+  "success": true,
+  "data": {
+    "marketingCopies": [
+      {
+        "id": 1,
+        "content": "마케팅 문구 내용",
+        "platform": "instagram",
+        "hashtags": ["#해시태그1", "#해시태그2"],
+        "characterCount": 150
+      }
+    ],
+    "generatedAt": "2025-08-19T12:03:00Z",
+    "requestId": "unique-request-id"
+  },
+  "error": null
+}
+```
+
+## 4. 기술적 구현 요구사항
+
+### 4.1 프론트엔드 (Next.js)
+- **상태 관리**: React useState/useReducer
+- **폼 검증**: React Hook Form + Yup
+- **UI 라이브러리**: Tailwind CSS 권장
+- **로딩 상태**: 스피너 및 진행률 표시
+- **에러 처리**: 사용자 친화적 에러 메시지
+
+### 4.2 백엔드 API
+- **API Routes**: `/api/generate-marketing`
+- **환경변수**: `OPENAI_API_KEY`
+- **요청 제한**: Rate limiting 적용 (분당 10회)
+- **입력 검증**: 서버사이드 validation
+- **에러 로깅**: 개발자용 에러 로그
+
+### 4.3 보안 및 최적화
+- **API 키 보안**: 서버사이드에서만 사용
+- **입력 sanitization**: XSS 방지
+- **응답 캐싱**: 동일 요청에 대한 캐시 (선택사항)
+- **디바운싱**: 연속 클릭 방지
+
+---
+
+## 5. 개발 구현 계획
+
+### **1단계: 프로젝트 기반 설정 및 의존성 설치**
+- React Hook Form, Yup, OpenAI 등 필요한 패키지 설치
+- 환경변수 설정 (.env.local)
+- **UI 라이브러리 선택**: Shadcn/ui 또는 Radix UI 기반 컴포넌트 시스템 구축
+- **색상 팔레트 및 디자인 시스템 정의**: 일관된 색상, 타이포그래피, 간격 시스템
+
+### **2단계: 디자인 시스템 및 기본 컴포넌트 구축**
+- **공통 컴포넌트 라이브러리 생성**:
+  - Button (Primary, Secondary, Ghost 스타일)
+  - Input, Textarea (일관된 스타일링)
+  - Select, Checkbox, Radio (통일된 디자인)
+  - Card, Container (레이아웃용)
+- **타이포그래피 시스템**: 제목, 본문, 라벨 등 일관된 폰트 크기와 굵기
+- **간격 시스템**: 4px 단위 기반 일관된 마진/패딩
+
+### **3단계: 메인 레이아웃 및 네비게이션**
+- **헤더 컴포넌트**: 로고, 제목, 간단한 네비게이션
+- **메인 컨테이너**: 최대 너비 제한, 중앙 정렬, 적절한 여백
+- **반응형 그리드 시스템**: 모바일/태블릿/데스크톱 대응
+
+### **4단계: 마케팅 문구 생성기 메인 폼**
+- **가치 제언 입력 섹션**:
+  - 깔끔한 Textarea (최소 높이, 자동 확장)
+  - 문자 수 카운터 (우측 하단)
+  - 플레이스홀더 텍스트
+- **타겟팅 옵션 섹션**:
+  - 카드 형태로 그룹화
+  - 체크박스/라디오 버튼을 깔끔한 토글 형태로 구현
+  - 선택된 옵션 시각적 피드백
+
+### **5단계: 고급 옵션 및 플랫폼 선택**
+- **플랫폼별 옵션**:
+  - 탭 형태 또는 카드 그리드로 구분
+  - 각 플랫폼별 아이콘과 설명
+- **생성 옵션**:
+  - 슬라이더 또는 드롭다운으로 직관적 선택
+  - 미리보기 텍스트로 선택 결과 예시
+
+### **6단계: 폼 로직 및 검증 구현**
+- **React Hook Form 설정**:
+  - 실시간 검증 피드백
+  - 에러 메시지 표시 (빨간색 텍스트, 아이콘)
+- **Yup 스키마 정의**:
+  - 필수 필드 검증
+  - 문자 수 제한 검증
+  - 사용자 정의 검증 규칙
+
+### **7단계: API 백엔드 구현**
+- **`/api/generate-marketing` API 라우트**:
+  - OpenAI API 연동
+  - 입력 데이터 검증
+  - 에러 처리 및 로깅
+- **Rate Limiting**: 사용자당 분당 요청 제한
+
+### **8단계: 결과 출력 및 사용자 경험**
+- **결과 표시 영역**:
+  - 카드 형태로 각 결과 표시
+  - 플랫폼별 아이콘과 메타데이터
+  - 복사 버튼 (클립보드 연동)
+- **로딩 상태**: 심플한 스피너 또는 스켈레톤 UI
+- **에러 처리**: 사용자 친화적 에러 메시지
+
+### **9단계: UI/UX 최적화**
+- **색상 대비**: 접근성 고려한 색상 선택
+- **포커스 상태**: 키보드 네비게이션 지원
+- **반응형 디자인**: 모든 디바이스에서 최적화
+- **로딩 최적화**: 불필요한 리렌더링 방지
+
+### **10단계: 최종 테스트 및 배포**
+- **크로스 브라우저 테스트**
+- **접근성 테스트** (WCAG 가이드라인)
+- **성능 최적화**: 번들 크기, 로딩 속도
+- **배포 준비**: 환경변수, 빌드 최적화
+
+## 핵심 UI/UX 원칙
+
+1. **미니멀리즘**: 불필요한 요소 제거, 핵심 기능에 집중
+2. **일관성**: 색상, 폰트, 간격, 컴포넌트 스타일 통일
+3. **직관성**: 사용자가 한눈에 이해할 수 있는 인터페이스
+4. **접근성**: 색맹 사용자, 키보드 사용자 고려
+5. **반응형**: 모든 디바이스에서 최적의 경험 제공
+
+---
+
+## 6. 환경변수 설정
+
+프로젝트 실행을 위해 다음 환경변수를 설정해야 합니다:
+
+### 6.1 .env.local 파일 생성
+
+프로젝트 루트에 `.env.local` 파일을 생성하고 다음 내용을 추가하세요:
+
+```bash
+# OpenAI API 설정
+OPENAI_API_KEY=your_openai_api_key_here
+
+# 앱 설정
+NEXT_PUBLIC_APP_NAME=AI 마케팅 문구 생성기
+NEXT_PUBLIC_APP_DESCRIPTION=타겟과 플랫폼에 따른 맞춤형 마케팅 문구 자동 생성
+
+# 개발 환경 설정
+NODE_ENV=development
+```
+
+### 6.2 OpenAI API 키 발급
+
+1. [OpenAI Platform](https://platform.openai.com/)에 접속
+2. 계정 생성 또는 로그인
+3. API Keys 섹션에서 새 API 키 생성
+4. 생성된 키를 `OPENAI_API_KEY`에 설정
+
+### 6.3 주의사항
+
+- `.env.local` 파일은 `.gitignore`에 포함되어 있어 Git에 커밋되지 않습니다
+- API 키는 절대 공개 저장소에 업로드하지 마세요
+- 프로덕션 환경에서는 환경변수 관리 서비스를 사용하세요
