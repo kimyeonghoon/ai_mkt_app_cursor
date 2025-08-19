@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,6 +36,33 @@ interface FormData {
     forbiddenWords: string[];
   };
 }
+
+// Yup에서 추론된 타입
+type FormDataSchema = yup.InferType<typeof formSchema>;
+
+// Yup 검증 스키마 정의
+const formSchema = yup.object({
+  valueProposition: yup
+    .string()
+    .required("가치 제언을 입력해주세요")
+    .min(10, "최소 10자 이상 입력해주세요")
+    .max(500, "최대 500자까지 입력 가능합니다"),
+  targeting: yup.object({
+    gender: yup.string().required("성별을 선택해주세요"),
+    ageGroups: yup.array().min(1, "최소 1개 이상의 연령대를 선택해주세요"),
+    region: yup.string().required("지역을 선택해주세요"),
+    interests: yup.array().min(1, "최소 1개 이상의 관심분야를 선택해주세요")
+  }),
+  platform: yup.string().required("플랫폼을 선택해주세요"),
+  generationOptions: yup.object({
+    length: yup.string().required("문구 분량을 선택해주세요"),
+    tone: yup.string().required("어조/톤을 선택해주세요"),
+    ctaStyle: yup.string().required("콜투액션 스타일을 선택해주세요"),
+    emotionKeywords: yup.array().of(yup.string()),
+    count: yup.number().min(1).max(5).required("생성 개수를 선택해주세요"),
+    forbiddenWords: yup.array().of(yup.string())
+  })
+});
 
 const PLATFORMS = [
   { id: "instagram", name: "인스타그램", icon: "📸", description: "해시태그 포함, 시각적 콘텐츠" },
@@ -74,134 +104,84 @@ const EMOTION_KEYWORDS = [
 ];
 
 export default function Home() {
-  const [formData, setFormData] = useState<FormData>({
-    valueProposition: "",
-    targeting: {
-      gender: "all",
-      ageGroups: [],
-      region: "all",
-      interests: []
-    },
-    platform: "",
-    generationOptions: {
-      length: "medium",
-      tone: "casual",
-      ctaStyle: "direct",
-      emotionKeywords: [],
-      count: 3,
-      forbiddenWords: []
-    }
-  });
-
   const [isGenerating, setIsGenerating] = useState(false);
   const [results, setResults] = useState<any[]>([]);
   const [forbiddenWordsInput, setForbiddenWordsInput] = useState("");
 
-  const handleValuePropositionChange = (value: string) => {
-    setFormData(prev => ({ ...prev, valueProposition: value }));
-  };
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors, isValid, isDirty }
+  } = useForm<FormDataSchema>({
+    resolver: yupResolver(formSchema),
+    defaultValues: {
+      valueProposition: "",
+      targeting: {
+        gender: "all",
+        ageGroups: [],
+        region: "all",
+        interests: []
+      },
+      platform: "",
+      generationOptions: {
+        length: "medium",
+        tone: "casual",
+        ctaStyle: "direct",
+        emotionKeywords: [],
+        count: 3,
+        forbiddenWords: []
+      }
+    },
+    mode: "onChange" // 실시간 검증
+  });
 
-  const handleGenderChange = (value: string) => {
-    setFormData(prev => ({ ...prev, targeting: { ...prev.targeting, gender: value } }));
-  };
+  const watchedValues = watch();
 
   const handleAgeGroupChange = (ageGroup: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      targeting: {
-        ...prev.targeting,
-        ageGroups: checked 
-          ? [...prev.targeting.ageGroups, ageGroup]
-          : prev.targeting.ageGroups.filter(age => age !== ageGroup)
-      }
-    }));
-  };
-
-  const handleRegionChange = (value: string) => {
-    setFormData(prev => ({ ...prev, targeting: { ...prev.targeting, region: value } }));
+    const currentAgeGroups = watchedValues.targeting.ageGroups || [];
+    const newAgeGroups = checked 
+      ? [...currentAgeGroups, ageGroup]
+      : currentAgeGroups.filter(age => age !== ageGroup);
+    
+    setValue("targeting.ageGroups", newAgeGroups, { shouldValidate: true });
   };
 
   const handleInterestChange = (interest: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      targeting: {
-        ...prev.targeting,
-        interests: checked 
-          ? [...prev.targeting.interests, interest]
-          : prev.targeting.interests.filter(i => i !== interest)
-      }
-    }));
-  };
-
-  const handlePlatformChange = (value: string) => {
-    setFormData(prev => ({ ...prev, platform: value }));
-  };
-
-  const handleLengthChange = (value: string) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      generationOptions: { ...prev.generationOptions, length: value } 
-    }));
-  };
-
-  const handleToneChange = (value: string) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      generationOptions: { ...prev.generationOptions, tone: value } 
-    }));
-  };
-
-  const handleCtaStyleChange = (value: string) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      generationOptions: { ...prev.generationOptions, ctaStyle: value } 
-    }));
+    const currentInterests = watchedValues.targeting.interests || [];
+    const newInterests = checked 
+      ? [...currentInterests, interest]
+      : currentInterests.filter(i => i !== interest);
+    
+    setValue("targeting.interests", newInterests, { shouldValidate: true });
   };
 
   const handleEmotionKeywordChange = (keyword: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      generationOptions: {
-        ...prev.generationOptions,
-        emotionKeywords: checked 
-          ? [...prev.generationOptions.emotionKeywords, keyword]
-          : prev.generationOptions.emotionKeywords.filter(k => k !== keyword)
-      }
-    }));
-  };
-
-  const handleCountChange = (value: string) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      generationOptions: { ...prev.generationOptions, count: parseInt(value) } 
-    }));
+    const currentKeywords = watchedValues.generationOptions.emotionKeywords || [];
+    const newKeywords = checked 
+      ? [...currentKeywords, keyword]
+      : currentKeywords.filter(k => k !== keyword);
+    
+    setValue("generationOptions.emotionKeywords", newKeywords);
   };
 
   const handleForbiddenWordsAdd = () => {
     if (forbiddenWordsInput.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        generationOptions: {
-          ...prev.generationOptions,
-          forbiddenWords: [...prev.generationOptions.forbiddenWords, forbiddenWordsInput.trim()]
-        }
-      }));
+      const currentWords = watchedValues.generationOptions.forbiddenWords || [];
+      const newWords = [...currentWords, forbiddenWordsInput.trim()];
+      setValue("generationOptions.forbiddenWords", newWords);
       setForbiddenWordsInput("");
     }
   };
 
   const handleForbiddenWordsRemove = (word: string) => {
-    setFormData(prev => ({
-      ...prev,
-      generationOptions: {
-        ...prev.generationOptions,
-        forbiddenWords: prev.generationOptions.forbiddenWords.filter(w => w !== word)
-      }
-    }));
+    const currentWords = watchedValues.generationOptions.forbiddenWords || [];
+    const newWords = currentWords.filter(w => w !== word);
+    setValue("generationOptions.forbiddenWords", newWords);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: FormDataSchema) => {
     setIsGenerating(true);
     
     try {
@@ -210,15 +190,15 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(data),
       });
 
-      const data = await response.json();
+      const result = await response.json();
       
-      if (data.success) {
-        setResults(data.data.marketingCopies);
+      if (result.success) {
+        setResults(result.data.marketingCopies);
       } else {
-        console.error('Generation failed:', data.error);
+        console.error('Generation failed:', result.error);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -227,8 +207,7 @@ export default function Home() {
     }
   };
 
-  const characterCount = formData.valueProposition.length;
-  const isFormValid = formData.valueProposition.length >= 10 && formData.platform;
+  const characterCount = watchedValues.valueProposition?.length || 0;
 
   return (
     <Container size="lg" padding="lg">
@@ -257,7 +236,7 @@ export default function Home() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           {/* 가치 제언 입력 섹션 */}
           <Card>
             <CardHeader>
@@ -273,18 +252,20 @@ export default function Home() {
                   <Textarea
                     id="valueProposition"
                     placeholder="예시: 건강한 식습관으로 더 멋진 20대 되어보세요! 나에게 꼭 맞는 영양 관리 서비스로 쉽고 편리하게 시작해보세요."
-                    value={formData.valueProposition}
-                    onChange={(e) => handleValuePropositionChange(e.target.value)}
-                    className="min-h-[120px] resize-none"
+                    {...register("valueProposition")}
+                    className={`min-h-[120px] resize-none ${
+                      errors.valueProposition ? "border-destructive focus:border-destructive" : ""
+                    }`}
                     maxLength={500}
                   />
                   <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
                     {characterCount}/500
                   </div>
                 </div>
-                {characterCount < 10 && characterCount > 0 && (
-                  <p className="text-sm text-destructive">
-                    최소 10자 이상 입력해주세요
+                {errors.valueProposition && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <span className="text-red-500">⚠️</span>
+                    {errors.valueProposition.message}
                   </p>
                 )}
               </div>
@@ -302,8 +283,11 @@ export default function Home() {
             <CardContent className="space-y-6">
               {/* 성별 */}
               <div className="space-y-3">
-                <Label>성별</Label>
-                <RadioGroup value={formData.targeting.gender} onValueChange={handleGenderChange}>
+                <Label>성별 *</Label>
+                <RadioGroup 
+                  value={watchedValues.targeting?.gender || "all"} 
+                  onValueChange={(value) => setValue("targeting.gender", value, { shouldValidate: true })}
+                >
                   <div className="flex gap-4">
                     {[
                       { id: "all", name: "전체" },
@@ -318,11 +302,17 @@ export default function Home() {
                     ))}
                   </div>
                 </RadioGroup>
+                {errors.targeting?.gender && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <span className="text-red-500">⚠️</span>
+                    {errors.targeting.gender.message}
+                  </p>
+                )}
               </div>
 
               {/* 연령대 */}
               <div className="space-y-3">
-                <Label>연령대</Label>
+                <Label>연령대 *</Label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {[
                     { id: "10s", name: "10대" },
@@ -335,7 +325,7 @@ export default function Home() {
                     <div key={age.id} className="flex items-center space-x-2">
                       <Checkbox
                         id={age.id}
-                        checked={formData.targeting.ageGroups.includes(age.id)}
+                        checked={watchedValues.targeting?.ageGroups?.includes(age.id) || false}
                         onCheckedChange={(checked) => 
                           handleAgeGroupChange(age.id, checked as boolean)
                         }
@@ -344,13 +334,22 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
+                {errors.targeting?.ageGroups && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <span className="text-red-500">⚠️</span>
+                    {errors.targeting.ageGroups.message}
+                  </p>
+                )}
               </div>
 
               {/* 지역 */}
               <div className="space-y-3">
-                <Label>지역</Label>
-                <Select value={formData.targeting.region} onValueChange={handleRegionChange}>
-                  <SelectTrigger>
+                <Label>지역 *</Label>
+                <Select 
+                  value={watchedValues.targeting?.region || "all"} 
+                  onValueChange={(value) => setValue("targeting.region", value, { shouldValidate: true })}
+                >
+                  <SelectTrigger className={errors.targeting?.region ? "border-destructive" : ""}>
                     <SelectValue placeholder="지역을 선택하세요" />
                   </SelectTrigger>
                   <SelectContent>
@@ -360,11 +359,17 @@ export default function Home() {
                     <SelectItem value="overseas">해외</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.targeting?.region && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <span className="text-red-500">⚠️</span>
+                    {errors.targeting.region.message}
+                  </p>
+                )}
               </div>
 
               {/* 관심분야 */}
               <div className="space-y-3">
-                <Label>관심분야</Label>
+                <Label>관심분야 *</Label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {[
                     { id: "beauty", name: "뷰티" },
@@ -381,7 +386,7 @@ export default function Home() {
                     <div key={interest.id} className="flex items-center space-x-2">
                       <Checkbox
                         id={interest.id}
-                        checked={formData.targeting.interests.includes(interest.id)}
+                        checked={watchedValues.targeting?.interests?.includes(interest.id) || false}
                         onCheckedChange={(checked) => 
                           handleInterestChange(interest.id, checked as boolean)
                         }
@@ -390,6 +395,12 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
+                {errors.targeting?.interests && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <span className="text-red-500">⚠️</span>
+                    {errors.targeting.interests.message}
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -403,7 +414,10 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <RadioGroup value={formData.platform} onValueChange={handlePlatformChange}>
+              <RadioGroup 
+                value={watchedValues.platform || ""} 
+                onValueChange={(value) => setValue("platform", value, { shouldValidate: true })}
+              >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {PLATFORMS.map(platform => (
                     <div key={platform.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-colors">
@@ -420,6 +434,12 @@ export default function Home() {
                   ))}
                 </div>
               </RadioGroup>
+              {errors.platform && (
+                <p className="text-sm text-destructive flex items-center gap-1 mt-3">
+                  <span className="text-red-500">⚠️</span>
+                  {errors.platform.message}
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -434,8 +454,11 @@ export default function Home() {
             <CardContent className="space-y-6">
               {/* 문구 분량 */}
               <div className="space-y-3">
-                <Label>문구 분량</Label>
-                <RadioGroup value={formData.generationOptions.length} onValueChange={handleLengthChange}>
+                <Label>문구 분량 *</Label>
+                <RadioGroup 
+                  value={watchedValues.generationOptions?.length || "medium"} 
+                  onValueChange={(value) => setValue("generationOptions.length", value, { shouldValidate: true })}
+                >
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {LENGTH_OPTIONS.map(option => (
                       <div key={option.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-colors">
@@ -452,13 +475,22 @@ export default function Home() {
                     ))}
                   </div>
                 </RadioGroup>
+                {errors.generationOptions?.length && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <span className="text-red-500">⚠️</span>
+                    {errors.generationOptions.length.message}
+                  </p>
+                )}
               </div>
 
               {/* 어조/톤 */}
               <div className="space-y-3">
-                <Label>어조/톤</Label>
-                <Select value={formData.generationOptions.tone} onValueChange={handleToneChange}>
-                  <SelectTrigger>
+                <Label>어조/톤 *</Label>
+                <Select 
+                  value={watchedValues.generationOptions?.tone || "casual"} 
+                  onValueChange={(value) => setValue("generationOptions.tone", value, { shouldValidate: true })}
+                >
+                  <SelectTrigger className={errors.generationOptions?.tone ? "border-destructive" : ""}>
                     <SelectValue placeholder="어조를 선택하세요" />
                   </SelectTrigger>
                   <SelectContent>
@@ -469,12 +501,21 @@ export default function Home() {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.generationOptions?.tone && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <span className="text-red-500">⚠️</span>
+                    {errors.generationOptions.tone.message}
+                  </p>
+                )}
               </div>
 
               {/* 콜투액션 스타일 */}
               <div className="space-y-3">
-                <Label>콜투액션 스타일</Label>
-                <RadioGroup value={formData.generationOptions.ctaStyle} onValueChange={handleCtaStyleChange}>
+                <Label>콜투액션 스타일 *</Label>
+                <RadioGroup 
+                  value={watchedValues.generationOptions?.ctaStyle || "direct"} 
+                  onValueChange={(value) => setValue("generationOptions.ctaStyle", value, { shouldValidate: true })}
+                >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {CTA_STYLES.map(style => (
                       <div key={style.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:border-primary transition-colors">
@@ -491,6 +532,12 @@ export default function Home() {
                     ))}
                   </div>
                 </RadioGroup>
+                {errors.generationOptions?.ctaStyle && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <span className="text-red-500">⚠️</span>
+                    {errors.generationOptions.ctaStyle.message}
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -512,7 +559,7 @@ export default function Home() {
                     <div key={keyword.id} className="flex items-center space-x-2">
                       <Checkbox
                         id={keyword.id}
-                        checked={formData.generationOptions.emotionKeywords.includes(keyword.id)}
+                        checked={watchedValues.generationOptions?.emotionKeywords?.includes(keyword.id) || false}
                         onCheckedChange={(checked) => 
                           handleEmotionKeywordChange(keyword.id, checked as boolean)
                         }
@@ -529,10 +576,10 @@ export default function Home() {
 
               {/* 생성 개수 */}
               <div className="space-y-3">
-                <Label>생성 개수</Label>
+                <Label>생성 개수 *</Label>
                 <Select 
-                  value={formData.generationOptions.count.toString()} 
-                  onValueChange={handleCountChange}
+                  value={watchedValues.generationOptions?.count?.toString() || "3"} 
+                  onValueChange={(value) => setValue("generationOptions.count", parseInt(value), { shouldValidate: true })}
                 >
                   <SelectTrigger className="w-32">
                     <SelectValue />
@@ -545,6 +592,12 @@ export default function Home() {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.generationOptions?.count && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <span className="text-red-500">⚠️</span>
+                    {errors.generationOptions.count.message}
+                  </p>
+                )}
               </div>
 
               {/* 금지 단어 */}
@@ -566,9 +619,9 @@ export default function Home() {
                       추가
                     </Button>
                   </div>
-                  {formData.generationOptions.forbiddenWords.length > 0 && (
+                  {watchedValues.generationOptions?.forbiddenWords && watchedValues.generationOptions.forbiddenWords.length > 0 && (
                     <div className="flex flex-wrap gap-2">
-                      {formData.generationOptions.forbiddenWords.map((word, index) => (
+                      {watchedValues.generationOptions.forbiddenWords.map((word, index) => (
                         <Badge key={index} variant="secondary" className="gap-1">
                           {word}
                           <button
@@ -592,7 +645,7 @@ export default function Home() {
             <Button 
               type="submit" 
               size="lg" 
-              disabled={!isFormValid || isGenerating}
+              disabled={!isValid || isGenerating}
               className="px-8 py-3"
             >
               {isGenerating ? (
@@ -604,6 +657,13 @@ export default function Home() {
                 "🚀 마케팅 문구 생성하기"
               )}
             </Button>
+            
+            {/* 폼 상태 표시 */}
+            <div className="mt-4 text-sm text-muted-foreground">
+              {!isDirty && "폼을 작성해주세요"}
+              {isDirty && !isValid && "모든 필수 항목을 입력해주세요"}
+              {isValid && "✅ 폼이 완성되었습니다!"}
+            </div>
           </div>
         </form>
 
@@ -622,8 +682,8 @@ export default function Home() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">
-                        {PLATFORMS.find(p => p.id === result.platform)?.icon} 
-                        {PLATFORMS.find(p => p.id === result.platform)?.name}
+                        {PLATFORMS.find(p => p.id === result.platform)?.icon || "📱"} 
+                        {PLATFORMS.find(p => p.id === result.platform)?.name || "플랫폼"}
                       </Badge>
                       <Badge variant="secondary">
                         {result.characterCount}자
