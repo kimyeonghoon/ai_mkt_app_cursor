@@ -104,10 +104,15 @@ export default function Home() {
           </p>
           
           {/* 디자인 시스템 링크 */}
-          <div className="flex justify-center">
+          <div className="flex justify-center gap-4">
             <Link href="/design-system">
               <Button variant="outline" size="sm">
                 🎨 디자인 시스템 보기
+              </Button>
+            </Link>
+            <Link href="/advanced-marketing">
+              <Button variant="outline" size="sm">
+                🚀 고급 마케팅 기능
               </Button>
             </Link>
           </div>
