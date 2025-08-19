@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Link from "next/link";
 
 interface MarketingFormData {
   valueProposition: string;
@@ -101,6 +102,15 @@ export default function Home() {
           <p className="text-lg text-muted-foreground">
             타겟과 플랫폼에 따른 맞춤형 마케팅 문구를 자동으로 생성하세요
           </p>
+          
+          {/* 디자인 시스템 링크 */}
+          <div className="flex justify-center">
+            <Link href="/design-system">
+              <Button variant="outline" size="sm">
+                🎨 디자인 시스템 보기
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* 메인 폼 */}
